@@ -1,0 +1,23 @@
+[package]
+name = "flashcards"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.9.0"
+anyhow = "1.0.89"
+chrono = { version = "0.4.38", features = ["serde"] }
+console_error_panic_hook = "0.1.7"
+env_logger = "0.11.5"
+glob = "0.3.1"
+leptos = { version = "0.6.15", features = ["csr"] }
+serde = "1.0.210"
+toml = "0.8.19"
+
+[[bin]]
+name = "cli"
+path = "src/cli.rs"
+
+[[bin]]
+name = "web"
+path = "src/web.rs"
