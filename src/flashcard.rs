@@ -55,6 +55,10 @@ impl<'a> ReviewCard<'a> {
         &self.card.answer
     }
 
+    pub fn topic(&self) -> &str {
+        &self.card.topic
+    }
+
     pub fn ok(&mut self) {
         self.card.review_after_secs = max(self.card.review_after_secs, 86400) * 2;
         self.card.last_reviewed = Utc::now();
@@ -72,11 +76,17 @@ fn load_flashcards(dir: &str) -> Result<Vec<CardFromFileSys>, anyhow::Error> {
         .expect("Failed to read glob pattern")
         .filter_map(Result::ok) // Filter out errors
         .map(|path| path.to_string_lossy().to_string()) // Convert paths to strings
-        .filter(|path| !path.ends_with("boxes.toml")) // Filter out directories
         .map(|path| {
             let contents = fs::read_to_string(&path).expect("Failed to read file");
-            let card: Flashcard = toml::from_str(&contents)
+            let mut card: Flashcard = toml::from_str(&contents)
                 .expect(format!("Failed to parse TOML: {}", path).as_str());
+            card.topic = path
+                .split('/')
+                .rev()
+                .nth(1)
+                .unwrap_or_else(|| "unknown")
+                .to_string();
+            println!("Loaded card {}", path);
             CardFromFileSys {
                 card,
                 filename: path,
@@ -89,12 +99,18 @@ fn load_flashcards(dir: &str) -> Result<Vec<CardFromFileSys>, anyhow::Error> {
 pub struct Flashcard {
     pub question: String,
     pub answer: String,
+
     pub examples: Vec<String>,
 
     pub added: String,
+    pub source: Option<String>,
+    // Each flashcard belongs to some topic: spanish, programming, maths, etc.
+    #[serde(default)]
+    #[serde(skip_serializing)]
+    pub topic: String,
+
     pub last_reviewed: DateTime<Utc>,
     pub review_after_secs: i64,
-    pub source: Option<String>,
 }
 
 #[derive(Debug)]

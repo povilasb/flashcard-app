@@ -12,6 +12,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for mut card in db.review() {
         println!("Q: {}", card.question());
+        println!("   #{}", card.topic());
         println!("Press enter to reveal the answer");
         readln();
 
