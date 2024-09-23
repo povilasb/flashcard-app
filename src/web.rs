@@ -5,14 +5,15 @@ use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use chrono::Utc;
 use env_logger::Env;
 use serde::Deserialize;
+use std::path::PathBuf;
 
 use flashcard::{Database, Flashcard};
 
-const add_card_form: &str = include_str!("../add_card.html");
+const ADD_CARD_FORM: &str = include_str!("../add_card.html");
 
 #[get("/")]
 async fn add_flashcard_form() -> impl Responder {
-    HttpResponse::Ok().body(add_card_form)
+    HttpResponse::Ok().body(ADD_CARD_FORM)
 }
 
 #[derive(Debug, Deserialize)]
@@ -22,6 +23,7 @@ struct AddFlashcard {
     answer: String,
     examples: String,
     source: Option<String>,
+    img: Option<PathBuf>,
 }
 
 #[post("/flashcard")]
@@ -30,6 +32,7 @@ async fn add_flashcard(q: web::Form<AddFlashcard>) -> impl Responder {
     let card = Flashcard {
         topic: q.topic,
         question: q.question,
+        img: q.img,
         answer: q.answer,
         examples: q
             .examples

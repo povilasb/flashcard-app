@@ -4,6 +4,7 @@ use glob::glob;
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::fs;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Database {
@@ -73,6 +74,10 @@ impl<'a> ReviewCard<'a> {
         &self.card.topic
     }
 
+    pub fn img(&self) -> Option<&PathBuf> {
+        self.card.img.as_ref()
+    }
+
     pub fn ok(&mut self) {
         self.card.review_after_secs = max(self.card.review_after_secs, 86400) * 2;
         self.card.last_reviewed = Utc::now();
@@ -100,7 +105,6 @@ fn load_flashcards(dir: &str) -> Result<Vec<CardFromFileSys>, anyhow::Error> {
                 .nth(1)
                 .unwrap_or_else(|| "unknown")
                 .to_string();
-            println!("Loaded card {}", path);
             CardFromFileSys {
                 card,
                 filename: path,
@@ -118,6 +122,8 @@ pub struct Flashcard {
 
     pub added: String,
     pub source: Option<String>,
+    pub img: Option<PathBuf>,
+
     // Each flashcard belongs to some topic: spanish, programming, maths, etc.
     #[serde(default)]
     #[serde(skip_serializing)]
