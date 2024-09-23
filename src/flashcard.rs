@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::fs;
 use std::path::PathBuf;
+use ulid::Ulid;
 
 #[derive(Debug)]
 pub struct Database {
@@ -25,14 +26,14 @@ impl Database {
     pub fn save(&self) -> Result<(), anyhow::Error> {
         for fs_card in &self.sorted_cards {
             let toml = toml::to_string(&fs_card.card).context("Failed to serialize card")?;
+            // TODO: mkdir if necessary
+            // TODO: check if file name does not exist
             fs::write(&fs_card.filename, toml).context("Failed to write card to disk")?;
         }
         Ok(())
     }
 
     pub fn add(&mut self, card: Flashcard) {
-        // TODO: mkdir if necessary
-        // TODO: check if file name does not exist
         let fname = card
             .question
             .split(' ')
@@ -115,12 +116,13 @@ fn load_flashcards(dir: &str) -> Result<Vec<CardFromFileSys>, anyhow::Error> {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Flashcard {
+    #[serde(default = "Ulid::new")]
+    pub id: Ulid,
     pub question: String,
     pub answer: String,
 
     pub examples: Vec<String>,
 
-    pub added: String,
     pub source: Option<String>,
     pub img: Option<PathBuf>,
 
