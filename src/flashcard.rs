@@ -29,6 +29,20 @@ impl Database {
         Ok(())
     }
 
+    pub fn add(&mut self, card: Flashcard) {
+        // TODO: mkdir if necessary
+        // TODO: check if file name does not exist
+        let fname = card
+            .question
+            .split(' ')
+            .take(3)
+            .map(|word| word.to_string())
+            .collect::<Vec<String>>()
+            .join("_");
+        let filename = format!("flashcards/{}/{}.toml", card.topic, fname);
+        self.sorted_cards.push(CardFromFileSys { card, filename });
+    }
+
     pub fn review(&mut self) -> impl Iterator<Item = ReviewCard> {
         self.sorted_cards
             .iter_mut()
