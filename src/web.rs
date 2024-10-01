@@ -40,7 +40,6 @@ async fn add_flashcard(q: web::Form<AddFlashcard>) -> impl Responder {
             .split('\n')
             .map(|s| s.to_string())
             .collect(),
-        added: Utc::now().to_string(),
         last_reviewed: Utc::now(),
         source: q.source,
         review_after_secs: 0,

@@ -45,48 +45,38 @@ impl Database {
         self.sorted_cards.push(CardFromFileSys { card, filename });
     }
 
-    pub fn review(&mut self) -> impl Iterator<Item = ReviewCard> {
+    pub fn next(&self) -> Option<Flashcard> {
         self.sorted_cards
-            .iter_mut()
-            .take_while(|fs_card| {
+            .iter()
+            .filter(|fs_card| {
                 fs_card.card.last_reviewed.timestamp() + fs_card.card.review_after_secs
                     <= Utc::now().timestamp()
             })
-            .map(|fs_card| ReviewCard {
-                card: &mut fs_card.card,
-            })
-    }
-}
-
-pub struct ReviewCard<'a> {
-    card: &'a mut Flashcard,
-}
-
-impl<'a> ReviewCard<'a> {
-    pub fn question(&self) -> &str {
-        &self.card.question
+            .next()
+            .map(|fs_card| fs_card.card.clone())
     }
 
-    pub fn answer(&self) -> &str {
-        &self.card.answer
+    pub fn ok(&mut self, card: Ulid) {
+        if let Some(fs_card) = self
+            .sorted_cards
+            .iter_mut()
+            .find(|fs_card| fs_card.card.id == card)
+        {
+            fs_card.card.review_after_secs = max(fs_card.card.review_after_secs, 86400) * 2;
+            fs_card.card.last_reviewed = Utc::now();
+        }
     }
 
-    pub fn topic(&self) -> &str {
-        &self.card.topic
-    }
-
-    pub fn img(&self) -> Option<&PathBuf> {
-        self.card.img.as_ref()
-    }
-
-    pub fn ok(&mut self) {
-        self.card.review_after_secs = max(self.card.review_after_secs, 86400) * 2;
-        self.card.last_reviewed = Utc::now();
-    }
-
-    pub fn fail(&mut self) {
-        self.card.review_after_secs = 0;
-        self.card.last_reviewed = Utc::now();
+    pub fn fail(&mut self, card: Ulid) {
+        if let Some(fs_card) = self
+            .sorted_cards
+            .iter_mut()
+            .find(|fs_card| fs_card.card.id == card)
+        {
+            // Don't prompt to review immediately.
+            fs_card.card.review_after_secs = 3600;
+            fs_card.card.last_reviewed = Utc::now();
+        }
     }
 }
 
