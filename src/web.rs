@@ -6,6 +6,7 @@ use chrono::Utc;
 use env_logger::Env;
 use serde::Deserialize;
 use std::path::PathBuf;
+use ulid::Ulid;
 
 use flashcard::{Database, Flashcard};
 
@@ -30,6 +31,7 @@ struct AddFlashcard {
 async fn add_flashcard(q: web::Form<AddFlashcard>) -> impl Responder {
     let q = q.into_inner();
     let card = Flashcard {
+        id: Ulid::new(),
         topic: q.topic,
         question: q.question,
         img: q.img,
