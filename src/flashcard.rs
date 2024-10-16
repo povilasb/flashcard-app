@@ -15,6 +15,7 @@ pub struct Database {
 impl Database {
     pub fn load(dir: &str) -> Result<Self, anyhow::Error> {
         let mut cards = load_flashcards(dir)?;
+        println!("Total fashcards: {}", cards.len());
         cards.sort_by_cached_key(|fs_card| {
             fs_card.card.last_reviewed.timestamp() + fs_card.card.review_after_secs
         });
