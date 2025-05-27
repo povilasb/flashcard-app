@@ -1,6 +1,7 @@
 # About
 
 Flashcard app.
+The less we forget.
 
 ## Usage
 
@@ -9,3 +10,9 @@ cargo run --bin=cli
 cargo run --bin=web
 cargo watch -x 'run --bin=web'
 ```
+
+## Why?
+
+* Ability to reuse flashcards to other purposes, like exercising touch typing.
+* Simple custom reviewing algorithms.
+* Easy card sharing across devices with total data ownership.

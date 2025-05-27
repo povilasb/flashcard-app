@@ -8,6 +8,8 @@ use flashcard::Database;
 
 const DB_DIR: &str = "flashcards";
 
+// TODO: view subcommand
+
 fn main() -> Result<(), Box<dyn Error>> {
     let mut db = Database::load(DB_DIR)?;
     let media_dir = env::current_dir()?.join(DB_DIR).join("media");

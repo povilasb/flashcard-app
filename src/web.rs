@@ -34,7 +34,7 @@ async fn add_flashcard(q: web::Form<AddFlashcard>) -> impl Responder {
         id: Ulid::new(),
         topic: q.topic,
         question: q.question,
-        img: q.img,
+        img: q.img.filter(|p| !p.to_string_lossy().is_empty()),
         answer: q.answer,
         examples: q
             .examples
@@ -62,7 +62,7 @@ async fn main() -> std::io::Result<()> {
             .service(add_flashcard_form)
             .service(add_flashcard)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("0.0.0.0", 7080))?
     .run()
     .await
 }
