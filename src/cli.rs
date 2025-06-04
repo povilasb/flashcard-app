@@ -4,11 +4,9 @@ use std::env;
 use std::error::Error;
 use std::io;
 
-use flashcard::Database;
+use db::Database;
 
 const DB_DIR: &str = "flashcards";
-
-// TODO: view subcommand
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut db = Database::load(DB_DIR)?;

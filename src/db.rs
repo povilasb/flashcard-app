@@ -1,18 +1,32 @@
+//! Filesystem-based database for flashcards.
+
+#![cfg(feature = "ssr")]
+
 use anyhow::{Context, Result};
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use glob::glob;
-use serde::{Deserialize, Serialize};
+use once_cell::sync::OnceCell;
 use std::cmp::max;
 use std::fs;
-use std::path::PathBuf;
-use ulid::Ulid;
+use std::sync::Mutex;
+use crate::model::Flashcard;
+
+static DATABASE: OnceCell<Mutex<Database>> = OnceCell::new();
 
 #[derive(Debug)]
 pub struct Database {
+    cards_dir: String,
     sorted_cards: Vec<CardFromFileSys>,
 }
 
 impl Database {
+    pub fn get_instance(cards_dir: &str) -> Result<&'static Mutex<Database>, anyhow::Error> {
+        DATABASE.get_or_try_init(|| {
+            let db = Database::load(cards_dir)?;
+            Ok(Mutex::new(db))
+        })
+    }
+
     pub fn load(dir: &str) -> Result<Self, anyhow::Error> {
         let mut cards = load_flashcards(dir)?;
         println!("Total fashcards: {}", cards.len());
@@ -20,6 +34,7 @@ impl Database {
             fs_card.card.last_reviewed.timestamp() + fs_card.card.review_after_secs
         });
         Ok(Self {
+            cards_dir: dir.to_string(),
             sorted_cards: cards,
         })
     }
@@ -42,7 +57,7 @@ impl Database {
             .map(|word| word.to_string())
             .collect::<Vec<String>>()
             .join("_");
-        let filename = format!("flashcards/{}/{}.toml", card.topic, fname);
+        let filename = format!("{}/{}/{}.toml", self.cards_dir, card.tags.join("/"), fname);
         self.sorted_cards.push(CardFromFileSys { card, filename });
     }
 
@@ -57,7 +72,7 @@ impl Database {
             .map(|fs_card| fs_card.card.clone())
     }
 
-    pub fn ok(&mut self, card: Ulid) {
+    pub fn ok(&mut self, card: String) {
         if let Some(fs_card) = self
             .sorted_cards
             .iter_mut()
@@ -68,7 +83,7 @@ impl Database {
         }
     }
 
-    pub fn fail(&mut self, card: Ulid) {
+    pub fn fail(&mut self, card: String) {
         if let Some(fs_card) = self
             .sorted_cards
             .iter_mut()
@@ -91,39 +106,12 @@ fn load_flashcards(dir: &str) -> Result<Vec<CardFromFileSys>, anyhow::Error> {
             let contents = fs::read_to_string(&path).expect("Failed to read file");
             let mut card: Flashcard = toml::from_str(&contents)
                 .expect(format!("Failed to parse TOML: {}", path).as_str());
-            card.topic = path
-                .split('/')
-                .rev()
-                .nth(1)
-                .unwrap_or_else(|| "unknown")
-                .to_string();
             CardFromFileSys {
                 card,
                 filename: path,
             }
         })
         .collect())
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Flashcard {
-    #[serde(default = "Ulid::new")]
-    pub id: Ulid,
-    pub question: String,
-    pub answer: String,
-
-    pub examples: Vec<String>,
-
-    pub source: Option<String>,
-    pub img: Option<PathBuf>,
-
-    // Each flashcard belongs to some topic: spanish, programming, maths, etc.
-    #[serde(default)]
-    #[serde(skip_serializing)]
-    pub topic: String,
-
-    pub last_reviewed: DateTime<Utc>,
-    pub review_after_secs: i64,
 }
 
 #[derive(Debug)]

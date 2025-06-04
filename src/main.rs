@@ -1,39 +1,39 @@
-mod flashcard;
 
-use flashcard::Database;
-use leptos::*;
-use std::error::Error;
+#[cfg(feature = "ssr")]
+#[tokio::main]
+async fn main() {
+    use axum::Router;
+    use leptos::logging::log;
+    use leptos::prelude::*;
+    use leptos_axum::{generate_route_list, LeptosRoutes};
+    use flashcard_app::app::*;
 
-#[component]
-fn Flashcard<'a>(card: flashcard::ReviewCard<'a>) -> impl IntoView {
-    let (visible, set_visible) = create_signal(false);
-    let toggle_visibility = move |_| {
-        set_visible.update(|v| *v = !*v);
-    };
-    let question = card.question().to_string();
-    let answer = card.answer().to_string();
-    view! {
-        <div id="card-view">
-            <div class="flashcard">
-                <h3 class="question">Q: {question}</h3>
-                <p id="answer" style:display=move || { if visible.get() { "block" } else { "none" }} >A: {answer}</p>
-            </div>
-            <button class="show-answer-btn" on:click=toggle_visibility >Show Answer</button>
-        </div>
-    }
+    let conf = get_configuration(None).unwrap();
+    let addr = conf.leptos_options.site_addr;
+    let leptos_options = conf.leptos_options;
+    // Generate the list of routes in your Leptos App
+    let routes = generate_route_list(App);
+
+    let app = Router::new()
+        .leptos_routes(&leptos_options, routes, {
+            let leptos_options = leptos_options.clone();
+            move || shell(leptos_options.clone())
+        })
+        .fallback(leptos_axum::file_and_error_handler(shell))
+        .with_state(leptos_options);
+
+    // run our app with hyper
+    // `axum::Server` is a re-export of `hyper::Server`
+    log!("listening on http://{}", &addr);
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    axum::serve(listener, app.into_make_service())
+        .await
+        .unwrap();
 }
 
-#[component]
-fn App() -> impl IntoView {
-    let mut db = Database::load(DB_DIR).unwrap();
-    let card = db.review().next().unwrap();
-    view! {
-        <Flashcard card=card />
-    }
-}
-
-const DB_DIR: &str = "flashcards";
-
-fn main() -> Result<(), Box<dyn Error>> {
-    Ok(mount_to_body(move || view! { <App /> }))
+#[cfg(not(feature = "ssr"))]
+pub fn main() {
+    // no client-side main function
+    // unless we want this to work with e.g., Trunk for pure client-side testing
+    // see lib.rs for hydration function instead
 }
