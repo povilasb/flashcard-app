@@ -13,6 +13,6 @@ cargo watch -x 'run --bin=web'
 
 ## Why?
 
-* Ability to reuse flashcards to other purposes, like exercising touch typing.
+* Ability to reuse flashcards for other purposes, like exercising touch typing.
 * Simple custom reviewing algorithms.
-* Easy card sharing across devices with total data ownership.
+* Easy card sharing across devices with total data ownership and privacy.
