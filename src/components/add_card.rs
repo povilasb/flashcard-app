@@ -14,7 +14,7 @@ pub async fn submit_card(
     source: Option<String>,
     tags: String,
 ) -> Result<(), ServerFnError> {
-    let db = Database::get_instance("../flashcards").unwrap();
+    let db = Database::get_instance("flashcards").unwrap();
     let mut db = db.lock().unwrap();
 
     let mut card = Flashcard::new(question, answer);
