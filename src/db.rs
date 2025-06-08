@@ -2,120 +2,150 @@
 
 #![cfg(feature = "ssr")]
 
-use anyhow::{Context, Result};
-use chrono::Utc;
-use glob::glob;
+use std::error::Error;
+use anyhow::Result;
 use once_cell::sync::OnceCell;
-use std::cmp::max;
-use std::fs;
 use std::sync::Mutex;
 use crate::model::Flashcard;
+use duckdb::{params, Connection};
+use duckdb::types::Value;
+use chrono::{DateTime, Utc};
 
 static DATABASE: OnceCell<Mutex<Database>> = OnceCell::new();
 
-#[derive(Debug)]
 pub struct Database {
-    cards_dir: String,
-    sorted_cards: Vec<CardFromFileSys>,
+    conn: Connection,
 }
 
+/// NOTES:
+/// * duckdb-rs doesn't support arrays, so TEXT is used for examples and tags:
+///   * https://github.com/duckdb/duckdb-rs/issues/338
 impl Database {
     pub fn get_instance(cards_dir: &str) -> Result<&'static Mutex<Database>, anyhow::Error> {
         DATABASE.get_or_try_init(|| {
-            let db = Database::load(cards_dir)?;
+            let db = Database::load_or_init(cards_dir)?;
             Ok(Mutex::new(db))
         })
     }
 
-    pub fn load(dir: &str) -> Result<Self, anyhow::Error> {
-        let mut cards = load_flashcards(dir)?;
-        println!("Total fashcards: {}", cards.len());
-        cards.sort_by_cached_key(|fs_card| {
-            fs_card.card.last_reviewed.timestamp() + fs_card.card.review_after_secs
-        });
-        Ok(Self {
-            cards_dir: dir.to_string(),
-            sorted_cards: cards,
-        })
+    // Load existing db or create a new one if it doesn't exist.
+    pub fn load_or_init(fname: &str) -> Result<Self, anyhow::Error> {
+        let conn = Connection::open(fname)?;
+        conn.execute_batch("
+            CREATE SEQUENCE seq_flashcards;
+            CREATE TABLE IF NOT EXISTS flashcards (
+                id INTEGER PRIMARY KEY DEFAULT NEXTVAL('seq_flashcards'),
+                question TEXT,
+                answer TEXT,
+                examples TEXT,
+                source TEXT,
+                img TEXT,
+                last_reviewed TIMESTAMP,
+                review_after_secs INTEGER
+            );
+
+            CREATE TABLE IF NOT EXISTS flashcard_tags (
+                flashcard_id INTEGER,
+                tag TEXT,
+                PRIMARY KEY (flashcard_id, tag),
+                FOREIGN KEY (flashcard_id) REFERENCES flashcards(id),
+            );
+        ")?;
+        Ok(Self { conn })
     }
 
-    pub fn save(&self) -> Result<(), anyhow::Error> {
-        for fs_card in &self.sorted_cards {
-            let toml = toml::to_string(&fs_card.card).context("Failed to serialize card")?;
-            // TODO: mkdir if necessary
-            // TODO: check if file name does not exist
-            fs::write(&fs_card.filename, toml).context("Failed to write card to disk")?;
+    pub fn add_card(&self, card: Flashcard) -> Result<(), anyhow::Error> {
+        self.conn.execute("BEGIN TRANSACTION", params![])?;
+        
+        let mut stmt = self.conn.prepare(
+            "INSERT INTO flashcards (question, answer, examples, source, img, last_reviewed, review_after_secs) 
+             VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id"
+        )?;
+        let flashcard_id: i64 = stmt.query_row(
+            params![
+                card.question,
+                card.answer,
+                card.examples.join("\n"),
+                card.source,
+                card.img,
+                card.last_reviewed.to_rfc3339(),
+                card.review_after_secs,
+            ],
+            |row| row.get(0)
+        )?;
+        
+        for tag in card.tags {
+            self.conn.execute(
+                "INSERT INTO flashcard_tags (flashcard_id, tag) VALUES (?, ?)",
+                params![flashcard_id, tag]
+            )?;
         }
+        
+        self.conn.execute("COMMIT", params![])?;
         Ok(())
     }
 
-    pub fn add(&mut self, card: Flashcard) {
-        let fname = card
-            .question
-            .split(' ')
-            .take(3)
-            .map(|word| word.to_string())
-            .collect::<Vec<String>>()
-            .join("_");
-        let filename = format!("{}/{}/{}.toml", self.cards_dir, card.tags.join("/"), fname);
-        self.sorted_cards.push(CardFromFileSys { card, filename });
-    }
-
-    pub fn next(&self) -> Option<Flashcard> {
-        self.sorted_cards
-            .iter()
-            .filter(|fs_card| {
-                fs_card.card.last_reviewed.timestamp() + fs_card.card.review_after_secs
-                    <= Utc::now().timestamp()
+    pub fn all_cards(&self) -> Result<Vec<Flashcard>, Box<dyn Error>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT f.*, group_concat(ft.tag) from flashcards f 
+            join flashcard_tags ft on f.id = ft.flashcard_id 
+            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs"
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(Flashcard {
+                id: row.get::<_, i64>(0)?,
+                question: row.get(1)?,
+                answer: row.get(2)?,
+                examples: row.get::<_, String>(3)?.split("\n").filter(|s| !s.is_empty()).map(|s| s.to_string()).collect(),
+                source: row.get(4)?,
+                img: row.get(5)?,
+                last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
+                review_after_secs: row.get(7)?,
+                tags: row.get::<_, String>(8)?.split(",").map(|s| s.to_string()).collect(),
             })
-            .next()
-            .map(|fs_card| fs_card.card.clone())
+        })?;
+        Ok(rows.collect::<Result<Vec<_>, _>>()?)
     }
 
-    pub fn ok(&mut self, card: String) {
-        if let Some(fs_card) = self
-            .sorted_cards
-            .iter_mut()
-            .find(|fs_card| fs_card.card.id == card)
-        {
-            fs_card.card.review_after_secs = max(fs_card.card.review_after_secs, 86400) * 2;
-            fs_card.card.last_reviewed = Utc::now();
-        }
+    pub fn next(&self) -> Result<Option<Flashcard>, anyhow::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT f.*, group_concat(ft.tag) from flashcards f 
+            join flashcard_tags ft on f.id = ft.flashcard_id 
+            WHERE last_reviewed + INTERVAL(review_after_secs) SECOND < CURRENT_TIMESTAMP
+            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs")?;
+        let mut rows = stmt.query_map([], |row| {
+            Ok(Flashcard {
+                id: row.get::<_, i64>(0)?,
+                question: row.get(1)?,
+                answer: row.get(2)?,
+                examples: row.get::<_, String>(3)?.split("\n").filter(|s| !s.is_empty()).map(|s| s.to_string()).collect(),
+                source: row.get(4)?,
+                img: row.get(5)?,
+                last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
+                review_after_secs: row.get(7)?,
+                tags: row.get::<_, String>(8)?.split(",").map(|s| s.to_string()).collect(),
+            })
+        })?;
+        Ok(rows.next().map(|row| row.unwrap()))
     }
 
-    pub fn fail(&mut self, card: String) {
-        if let Some(fs_card) = self
-            .sorted_cards
-            .iter_mut()
-            .find(|fs_card| fs_card.card.id == card)
-        {
-            // Don't prompt to review immediately.
-            fs_card.card.review_after_secs = 3600;
-            fs_card.card.last_reviewed = Utc::now();
-        }
+    pub fn ok(&mut self, card_id: i64) -> Result<(), Box<dyn Error>> {
+        self.conn.execute("UPDATE flashcards SET last_reviewed = CURRENT_TIMESTAMP, review_after_secs = review_after_secs * 2 WHERE id = ?", params![card_id])?;
+        Ok(())
+    }
+    
+    pub fn fail(&mut self, card_id: i64) -> Result<(), Box<dyn Error>> {
+        // Don't prompt to review immediately.
+        self.conn.execute("UPDATE flashcards SET last_reviewed = CURRENT_TIMESTAMP, review_after_secs = 3600 WHERE id = ?", params![card_id])?;
+        Ok(())
     }
 }
 
-fn load_flashcards(dir: &str) -> Result<Vec<CardFromFileSys>, anyhow::Error> {
-    let pattern = format!("{}/**/*.toml", dir);
-    Ok(glob(&pattern)
-        .expect("Failed to read glob pattern")
-        .filter_map(Result::ok) // Filter out errors
-        .map(|path| path.to_string_lossy().to_string()) // Convert paths to strings
-        .map(|path| {
-            let contents = fs::read_to_string(&path).expect("Failed to read file");
-            let mut card: Flashcard = toml::from_str(&contents)
-                .expect(format!("Failed to parse TOML: {}", path).as_str());
-            CardFromFileSys {
-                card,
-                filename: path,
-            }
-        })
-        .collect())
-}
-
-#[derive(Debug)]
-struct CardFromFileSys {
-    card: Flashcard,
-    filename: String,
+fn from_duckdb_timestamp(t: Value) -> DateTime<Utc> {
+    match t {
+        Value::Timestamp(time_unit, value) => {
+            DateTime::from_timestamp_micros(time_unit.to_micros(value)).unwrap().with_timezone(&Utc)
+        }
+        _ => panic!("expected timestamp, got {:?}", t),
+    }
 }

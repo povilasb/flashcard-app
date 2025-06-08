@@ -1,23 +1,30 @@
-mod flashcard;
+mod model;
+mod db;
 
 use std::env;
 use std::error::Error;
 use std::io;
+use crate::db::Database;
 
-use db::Database;
-
-const DB_DIR: &str = "flashcards";
+static DB_DIR: &str = "flashcards";
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut db = Database::load(DB_DIR)?;
+    let mut db = Database::load_or_init("flashcards.db")?;
+
+    for card in db.all_cards()? {
+        println!("Q: {}", card.question);
+    }
+
+    return Ok(());
+
     let media_dir = env::current_dir()?.join(DB_DIR).join("media");
 
-    while let Some(card) = db.next() {
+    while let Some(card) = db.next()? {
         println!("Q: {}", card.question);
         if let Some(img) = card.img {
             println!("   file://{}", media_dir.join(img).to_str().unwrap());
         }
-        println!("   #{}", card.topic);
+        println!("   #{}", card.tags.join(", "));
         println!("Press enter to reveal the answer");
         readln();
 
@@ -26,18 +33,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         let inpt = readln();
         match inpt.as_str() {
             "y" => {
-                db.ok(card.id);
+                db.ok(card.id)?;
             }
             "n" => {
-                db.fail(card.id);
+                db.fail(card.id)?;
             }
             _ => {
                 println!("Invalid input");
             }
         }
     }
-
-    db.save()?;
 
     Ok(())
 }

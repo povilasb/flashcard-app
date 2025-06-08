@@ -3,6 +3,7 @@ use leptos::prelude::*;
 use gloo_timers::callback::Timeout;
 #[cfg(feature = "ssr")]
 use crate::db::Database;
+#[cfg(feature = "ssr")]
 use crate::model::Flashcard;
 
 
@@ -14,17 +15,15 @@ pub async fn submit_card(
     source: Option<String>,
     tags: String,
 ) -> Result<(), ServerFnError> {
-    let db = Database::get_instance("flashcards").unwrap();
-    let mut db = db.lock().unwrap();
+    let db = Database::get_instance("flashcards.db").unwrap();
+    let db = db.lock().unwrap();
 
     let mut card = Flashcard::new(question, answer);
     card.examples = examples.lines().map(|s| s.to_string()).collect();
     card.source = source;
     card.tags = tags.split(',').map(|s| s.trim().to_string()).collect();
 
-    db.add(card);
-    db.save().unwrap();
-
+    db.add_card(card).unwrap(); //.map_err(|e| ServerFnError::new(e.to_string()))
     Ok(())
 }
 

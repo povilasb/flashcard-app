@@ -10,23 +10,22 @@ use crate::db::Database;
 
 #[server(GetNextCard, "/api")]
 pub async fn get_next_card() -> Result<Option<model::Flashcard>, ServerFnError> {
-    let db = Database::get_instance("flashcards").unwrap();
-    let mut db = db.lock().unwrap();
-    let card = db.next();
+    let db = Database::get_instance("flashcards.db").unwrap();
+    let db = db.lock().unwrap();
+    let card = db.next().map_err(|e| ServerFnError::new(e.to_string()))?;
     Ok(card)
 }
 
 #[server(SubmitAnswer, "/api")]
-pub async fn submit_answer(card_id: String, remembered: bool) -> Result<(), ServerFnError> {
-    let db = Database::get_instance("flashcards").unwrap();
+pub async fn submit_answer(card_id: i64, remembered: bool) -> Result<(), ServerFnError> {
+    let db = Database::get_instance("flashcards.db").unwrap();
     let mut db = db.lock().unwrap();
 
     if remembered {
-        db.ok(card_id);
+        db.ok(card_id).map_err(|e| ServerFnError::new(e.to_string()))?;
     } else {
-        db.fail(card_id);
+        db.fail(card_id).map_err(|e| ServerFnError::new(e.to_string()))?;
     }
-    db.save().unwrap();
 
     Ok(())
 } 
