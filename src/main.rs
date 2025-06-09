@@ -1,4 +1,3 @@
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
@@ -7,6 +6,9 @@ async fn main() {
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use flashcard_app::app::*;
+    use axum::http::header::{CACHE_CONTROL, PRAGMA, EXPIRES};
+    use axum::http::HeaderValue;
+    use axum::response::Response;
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -20,7 +22,13 @@ async fn main() {
             move || shell(leptos_options.clone())
         })
         .fallback(leptos_axum::file_and_error_handler(shell))
-        .with_state(leptos_options);
+        .with_state(leptos_options)
+        .layer(axum::middleware::map_response(|mut response: Response| async move {
+            response.headers_mut().insert(CACHE_CONTROL, HeaderValue::from_static("no-cache, no-store, must-revalidate"));
+            response.headers_mut().insert(PRAGMA, HeaderValue::from_static("no-cache"));
+            response.headers_mut().insert(EXPIRES, HeaderValue::from_static("0"));
+            response
+        }));
 
     // run our app with hyper
     // `axum::Server` is a re-export of `hyper::Server`
