@@ -50,19 +50,19 @@ pub fn AddCard() -> impl IntoView {
                 <ActionForm action=submit node_ref=form_ref>
                     <h2 class="text-2xl font-bold mb-4">{"Add a new card"}</h2>
                     <label class="flex flex-col gap-2">
-                        <span>Question:</span>
+                        <span>Question*:</span>
                         <input class="border rounded px-3 py-2" type="text" name="question" required=true />
                     </label>
                     <label class="flex flex-col gap-2">
-                        <span>Answer:</span>
-                        <input class="border rounded px-3 py-2" type="text" name="answer" required=true />
+                        <span>Answer*:</span>
+                        <textarea class="border rounded px-3 py-2" name="answer" rows=4 cols=80 required=true />
                     </label>
                     <label class="flex flex-col gap-2">
                         <span>Examples:</span>
                         <textarea class="border rounded px-3 py-2" name="examples" rows=4 cols=80 />
                     </label>
                     <label class="flex flex-col gap-2">
-                        <span>Source (Optional):</span>
+                        <span>Source:</span>
                         <input class="border rounded px-3 py-2" type="text" name="source" />
                     </label>
                     <label class="flex flex-col gap-2">
