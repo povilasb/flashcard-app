@@ -7,6 +7,7 @@ use leptos_router::{
 };
 use crate::components::add_card::AddCard;
 use crate::components::flashcard_deck::FlashcardDeck;
+use crate::components::list_cards::ListCards;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -52,6 +53,11 @@ pub fn App() -> impl IntoView {
                                 "Review cards"
                             </div>
                         </A>
+                        <A href="/list-cards">
+                            <div class="block px-4 py-2 text-gray-700 hover:bg-gray-200 rounded">
+                                "List cards"
+                            </div>
+                        </A>
                     </div>
                 </nav>
                 <main class="flex-1 p-4">
@@ -59,6 +65,7 @@ pub fn App() -> impl IntoView {
                         <Route path=StaticSegment("") view=AddCard/>
                         <Route path=path!("/add-card") view=AddCard/>
                         <Route path=path!("/review-cards") view=FlashcardDeck/>
+                        <Route path=path!("/list-cards") view=ListCards/>
                     </Routes>
                 </main>
             </div>
