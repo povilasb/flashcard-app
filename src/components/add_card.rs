@@ -23,8 +23,7 @@ pub async fn submit_card(
     card.source = source;
     card.tags = tags.split(',').map(|s| s.trim().to_string()).collect();
 
-    db.add_card(card).unwrap(); //.map_err(|e| ServerFnError::new(e.to_string()))
-    Ok(())
+    db.add_card(card).map_err(|e| ServerFnError::new(e.to_string()))
 }
 
 #[component]
