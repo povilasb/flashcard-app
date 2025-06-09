@@ -19,7 +19,7 @@ pub async fn submit_card(
     let db = db.lock().unwrap();
 
     let mut card = Flashcard::new(question, answer);
-    card.examples = examples.lines().map(|s| s.to_string()).collect();
+    card.examples = Some(examples);
     card.source = source;
     card.tags = tags.split(',').map(|s| s.trim().to_string()).collect();
 
@@ -58,7 +58,7 @@ pub fn AddCard() -> impl IntoView {
                         <input class="border rounded px-3 py-2" type="text" name="answer" required=true />
                     </label>
                     <label class="flex flex-col gap-2">
-                        <span>Examples (one per line):</span>
+                        <span>Examples:</span>
                         <textarea class="border rounded px-3 py-2" name="examples" rows=4 cols=80 />
                     </label>
                     <label class="flex flex-col gap-2">

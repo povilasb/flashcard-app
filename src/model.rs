@@ -9,8 +9,7 @@ pub struct Flashcard {
     pub question: String,
     pub answer: String,
 
-    pub examples: Vec<String>,
-
+    pub examples: Option<String>,
     pub source: Option<String>,
     pub img: Option<String>,
     pub tags: Vec<String>,
@@ -25,7 +24,7 @@ impl Flashcard {
             id: 0,
             question,
             answer,
-            examples: Vec::new(),
+            examples: None,
             source: None,
             img: None,
             tags: Vec::new(),
