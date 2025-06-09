@@ -39,27 +39,29 @@ pub fn App() -> impl IntoView {
         <Title text="Review flashcards"/>
 
         <Router>
-            <main>
-                <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=HomePage/>
-                    <Route path=path!("/add-card") view=AddCard/>
-                    <Route path=path!("/review-cards") view=FlashcardDeck/>
-                </Routes>
-            </main>
+            <div class="flex min-h-screen">
+                <nav class="w-64 bg-gray-100 p-4 border-r border-gray-200">
+                    <div class="space-y-2">
+                        <A href="/add-card">
+                            <div class="block px-4 py-2 text-gray-700 hover:bg-gray-200 rounded">
+                                "Add new card"
+                            </div>
+                        </A>
+                        <A href="/review-cards">
+                            <div class="block px-4 py-2 text-gray-700 hover:bg-gray-200 rounded">
+                                "Review cards"
+                            </div>
+                        </A>
+                    </div>
+                </nav>
+                <main class="flex-1 p-4">
+                    <Routes fallback=|| "Page not found.".into_view()>
+                        <Route path=StaticSegment("") view=AddCard/>
+                        <Route path=path!("/add-card") view=AddCard/>
+                        <Route path=path!("/review-cards") view=FlashcardDeck/>
+                    </Routes>
+                </main>
+            </div>
         </Router>
-    }
-}
-
-#[component]
-fn HomePage() -> impl IntoView {
-    view! {
-        <div class="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-            <A href="/add-card" >
-                "Add new card"
-            </A>
-            <A href="/review-cards" >
-                "Review cards"
-            </A>
-        </div>
     }
 }
