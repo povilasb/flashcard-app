@@ -11,15 +11,36 @@ use duckdb::{params, Connection};
 use duckdb::types::Value;
 use chrono::{DateTime, Utc};
 
+/// NOTES:
+/// * duckdb-rs doesn't support arrays, so tags are stored in a separate table.
+///   * https://github.com/duckdb/duckdb-rs/issues/338
+static INIT_TABLES_SQL: &str = "
+    CREATE SEQUENCE seq_flashcards;
+    CREATE TABLE IF NOT EXISTS flashcards (
+        id INTEGER PRIMARY KEY DEFAULT NEXTVAL('seq_flashcards'),
+        question TEXT,
+        answer TEXT,
+        examples TEXT,
+        source TEXT,
+        img TEXT,
+        last_reviewed TIMESTAMP,
+        review_after_secs INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS flashcard_tags (
+        flashcard_id INTEGER,
+        tag TEXT,
+        PRIMARY KEY (flashcard_id, tag),
+        FOREIGN KEY (flashcard_id) REFERENCES flashcards(id),
+    );
+";
+
 static DATABASE: OnceCell<Mutex<Database>> = OnceCell::new();
 
 pub struct Database {
     conn: Connection,
 }
 
-/// NOTES:
-/// * duckdb-rs doesn't support arrays, so TEXT is used for examples and tags:
-///   * https://github.com/duckdb/duckdb-rs/issues/338
 impl Database {
     pub fn get_instance(cards_dir: &str) -> Result<&'static Mutex<Database>, anyhow::Error> {
         DATABASE.get_or_try_init(|| {
@@ -28,32 +49,21 @@ impl Database {
         })
     }
 
-    // Load existing db or create a new one if it doesn't exist.
-    pub fn load_or_init(fname: &str) -> Result<Self, anyhow::Error> {
-        let conn = Connection::open(fname)?;
-        conn.execute_batch("
-            CREATE SEQUENCE seq_flashcards;
-            CREATE TABLE IF NOT EXISTS flashcards (
-                id INTEGER PRIMARY KEY DEFAULT NEXTVAL('seq_flashcards'),
-                question TEXT,
-                answer TEXT,
-                examples TEXT,
-                source TEXT,
-                img TEXT,
-                last_reviewed TIMESTAMP,
-                review_after_secs INTEGER
-            );
-
-            CREATE TABLE IF NOT EXISTS flashcard_tags (
-                flashcard_id INTEGER,
-                tag TEXT,
-                PRIMARY KEY (flashcard_id, tag),
-                FOREIGN KEY (flashcard_id) REFERENCES flashcards(id),
-            );
-        ")?;
+    #[cfg(test)]
+    fn in_memory() -> Result<Self, anyhow::Error> {
+        let conn = Connection::open_in_memory()?;
+        conn.execute_batch(INIT_TABLES_SQL)?;
         Ok(Self { conn })
     }
 
+    // Load existing db or create a new one if it doesn't exist.
+    pub fn load_or_init(fname: &str) -> Result<Self, anyhow::Error> {
+        let conn = Connection::open(fname)?;
+        conn.execute_batch(INIT_TABLES_SQL)?;
+        Ok(Self { conn })
+    }
+
+    // TODO: take a reference
     pub fn add_card(&self, card: Flashcard) -> Result<(), anyhow::Error> {
         self.conn.execute("BEGIN TRANSACTION", params![])?;
         
@@ -139,6 +149,66 @@ impl Database {
         self.conn.execute("UPDATE flashcards SET last_reviewed = CURRENT_TIMESTAMP, review_after_secs = 3600 WHERE id = ?", params![card_id])?;
         Ok(())
     }
+
+    pub fn get_card(&self, id: i64) -> Result<Flashcard, Box<dyn Error>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT f.*, group_concat(ft.tag) from flashcards f 
+            join flashcard_tags ft on f.id = ft.flashcard_id 
+            WHERE f.id = ?
+            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs"
+        )?;
+        let card = stmt.query_row([id], |row| {
+            Ok(Flashcard {
+                id: row.get::<_, i64>(0)?,
+                question: row.get(1)?,
+                answer: row.get(2)?,
+                examples: row.get(3)?,
+                source: row.get(4)?,
+                img: row.get(5)?,
+                last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
+                review_after_secs: row.get(7)?,
+                tags: row.get::<_, String>(8)?.split(",").map(|s| s.to_string()).collect(),
+            })
+        })?;
+        Ok(card)
+    }
+
+    pub fn update_card(&self, card: &Flashcard) -> Result<(), Box<dyn Error>> {
+        // NOTE: transactions don't work: seems like duckdb doesn't see flashcard_tags being removed when trying
+        // to insert new tags:
+        //     Some("Constraint Error: Duplicate key \"flashcard_id: 1, tag: tag1\" violates primary key constraint.
+        //self.conn.execute("BEGIN TRANSACTION", params![])?;
+        
+        // Update the flashcard
+        self.conn.execute(
+            "UPDATE flashcards SET question = ?, answer = ?, examples = ?, source = ?, img = ?, WHERE id = ?",
+            params![
+                card.question,
+                card.answer,
+                card.examples,
+                card.source,
+                card.img,
+                card.id,
+            ]
+        )?;
+        
+        // Delete existing tags
+        self.conn.execute(
+            "DELETE FROM flashcard_tags WHERE flashcard_id = ?",
+            params![card.id]
+        )?;
+        
+        // Insert new tags
+        for tag in card.tags.iter().as_ref() {
+            self.conn.execute(
+                "INSERT INTO flashcard_tags (flashcard_id, tag) VALUES (?, ?)",
+                params![card.id, tag]
+            )?;
+        }
+        
+        //self.conn.execute("COMMIT", params![])?;
+        Ok(())
+    }
 }
 
 fn from_duckdb_timestamp(t: Value) -> DateTime<Utc> {
@@ -147,5 +217,26 @@ fn from_duckdb_timestamp(t: Value) -> DateTime<Utc> {
             DateTime::from_timestamp_micros(time_unit.to_micros(value)).unwrap().with_timezone(&Utc)
         }
         _ => panic!("expected timestamp, got {:?}", t),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::Flashcard;
+
+    #[test]
+    fn test_update_card_works_when_nothing_changed() {
+        let db = Database::in_memory().unwrap();
+        let mut card = Flashcard::new("question1".to_string(), "answer1".to_string());
+        card.tags = vec!["tag1".to_string()];
+        let mut new_card = card.clone();
+        new_card.id = 1;
+        db.add_card(card).unwrap();
+
+        db.update_card(&new_card).unwrap();
+
+        let card = db.get_card(1).unwrap();
+        assert_eq!(card.tags, vec!["tag1".to_string()]);
     }
 }

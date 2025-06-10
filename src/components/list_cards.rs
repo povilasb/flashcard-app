@@ -45,8 +45,8 @@ pub fn ListCards() -> impl IntoView {
                             <tbody>
                                 {cards.into_iter().map(|card| {
                                     view! {
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-4 py-2 border">{card.question}</td>
+                                        <tr class="hover:bg-gray-50 cursor-pointer" >
+                                            <td class="px-4 py-2 border"><a href=format!("/cards/edit/{}", card.id.to_string())>{card.question}</a></td>
                                             <td class="px-4 py-2 border">{card.answer}</td>
                                             <td class="px-4 py-2 border">{card.tags.join(", ")}</td>
                                             <td class="px-4 py-2 border">{card.last_reviewed.format("%Y-%m-%d %H:%M").to_string()}</td>

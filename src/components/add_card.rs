@@ -3,7 +3,6 @@ use leptos::prelude::*;
 use gloo_timers::callback::Timeout;
 #[cfg(feature = "ssr")]
 use crate::db::Database;
-#[cfg(feature = "ssr")]
 use crate::model::Flashcard;
 
 
@@ -24,6 +23,37 @@ pub async fn submit_card(
     card.tags = tags.split(',').map(|s| s.trim().to_string()).collect();
 
     db.add_card(card).map_err(|e| ServerFnError::new(e.to_string()))
+}
+
+/// Reused to add or edit a card.
+#[component]
+pub fn FlashcardForm(
+    #[prop(into)] card: Flashcard,
+) -> impl IntoView {
+    view! {
+        <div>
+            <label class="flex flex-col gap-2">
+                <span>Question*:</span>
+                <input class="border rounded px-3 py-2" type="text" name="question" required=true value=card.question />
+            </label>
+            <label class="flex flex-col gap-2">
+                <span>Answer*:</span>
+                <textarea class="border rounded px-3 py-2" name="answer" rows=4 cols=80 required=true >{card.answer}</textarea>
+            </label>
+            <label class="flex flex-col gap-2">
+                <span>Examples:</span>
+                <textarea class="border rounded px-3 py-2" name="examples" rows=4 cols=80 >{card.examples}</textarea>
+            </label>
+            <label class="flex flex-col gap-2">
+                <span>Source:</span>
+                <input class="border rounded px-3 py-2" type="text" name="source" value=card.source />
+            </label>
+            <label class="flex flex-col gap-2">
+                <span>Tags (comma separated):</span>
+                    <input class="border rounded px-3 py-2" type="text" name="tags" value={card.tags.join(",")} />
+            </label>
+        </div>
+    }
 }
 
 #[component]
@@ -48,26 +78,7 @@ pub fn AddCard() -> impl IntoView {
             <div class="flex flex-col gap-4 w-full max-w-md bg-white p-8 rounded shadow">
                 <ActionForm action=submit node_ref=form_ref>
                     <h2 class="text-2xl font-bold mb-4">{"Add a new card"}</h2>
-                    <label class="flex flex-col gap-2">
-                        <span>Question*:</span>
-                        <input class="border rounded px-3 py-2" type="text" name="question" required=true />
-                    </label>
-                    <label class="flex flex-col gap-2">
-                        <span>Answer*:</span>
-                        <textarea class="border rounded px-3 py-2" name="answer" rows=4 cols=80 required=true />
-                    </label>
-                    <label class="flex flex-col gap-2">
-                        <span>Examples:</span>
-                        <textarea class="border rounded px-3 py-2" name="examples" rows=4 cols=80 />
-                    </label>
-                    <label class="flex flex-col gap-2">
-                        <span>Source:</span>
-                        <input class="border rounded px-3 py-2" type="text" name="source" />
-                    </label>
-                    <label class="flex flex-col gap-2">
-                        <span>Tags (comma separated):</span>
-                        <input class="border rounded px-3 py-2" type="text" name="tags" />
-                    </label>
+                    <FlashcardForm card=Flashcard::new("".to_string(), "".to_string()) />
                     <button class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition mt-4" type="submit">{"Create Flashcard"}</button>
                 </ActionForm>
                 <Show when=move || show_ack.get()>

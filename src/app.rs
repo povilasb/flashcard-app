@@ -8,6 +8,7 @@ use leptos_router::{
 use crate::components::add_card::AddCard;
 use crate::components::flashcard_deck::FlashcardDeck;
 use crate::components::list_cards::ListCards;
+use crate::components::edit_card::EditCard;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -66,6 +67,7 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/add-card") view=AddCard/>
                         <Route path=path!("/review-cards") view=FlashcardDeck/>
                         <Route path=path!("/list-cards") view=ListCards/>
+                        <Route path=path!("/cards/edit/:id") view=EditCard/>
                     </Routes>
                 </main>
             </div>
