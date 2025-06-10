@@ -22,7 +22,7 @@ pub fn Flashcard(
                     <p class="m-0 text-[1.1rem] leading-6 text-left"><b>"Q: "</b>{card.question}</p>
                 </div>
                 <div class="flex items-start gap-4 justify-start" style:display=move || if show_answer.get() { "flex" } else { "none" }>
-                    <p class="m-0 text-[1.1rem] leading-6 text-left"><b>"A: "</b>{card.answer}</p>
+                    <p class="m-0 text-[1.1rem] leading-6 text-left" style="white-space: pre-wrap"><b>"A: "</b><br/>{card.answer}</p>
                 </div>
                 <div>
                     <For
