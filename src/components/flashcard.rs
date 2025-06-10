@@ -17,7 +17,7 @@ pub fn Flashcard(
 
     view! {
         <div class="max-w-[600px] mx-auto my-8 p-4">
-            <div class="bg-white border border-slate-200 rounded-lg p-6 mb-4 shadow text-left">
+            <div class="bg-white border border-slate-200 rounded-lg p-6 mb-4 shadow text-left relative">
                 <div class="flex items-start gap-4 justify-start">
                     <p class="m-0 text-[1.1rem] leading-6 text-left"><b>"Q: "</b>{card.question}</p>
                 </div>
@@ -35,6 +35,15 @@ pub fn Flashcard(
                         }
                     />
                 </div>
+                <a
+                    class="absolute bottom-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+                    title="Edit card"
+                    href=format!("/cards/edit/{}", card.id.to_string())
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                    </svg>
+                </a>
             </div>
             <div class="mt-4 flex justify-center">
                 <Show
