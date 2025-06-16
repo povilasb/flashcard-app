@@ -98,12 +98,17 @@ pub fn EditCard(
                                 <h2 class="text-2xl font-bold mb-4">{"Edit card"}</h2>
                                 <input type="hidden" name="id" value=card.id />
                                 <FlashcardForm card=card />
-                                <button class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition mt-4" type="submit">
+                                <button
+                                    class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition mt-4"
+                                    type="submit"
+                                >
                                     "Update Flashcard"
                                 </button>
                             </ActionForm>
                             <Show when=move || show_ack.get()>
-                                <div class="text-green-600 font-semibold mt-2">{"Card updated successfully!"}</div>
+                                <div class="text-green-600 font-semibold mt-2">
+                                    {"Card updated successfully!"}
+                                </div>
                             </Show>
                         }
                     }}

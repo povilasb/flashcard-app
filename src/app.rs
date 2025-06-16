@@ -15,14 +15,14 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
         <!DOCTYPE html>
         <html lang="en">
             <head>
-                <meta charset="utf-8"/>
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <AutoReload options=options.clone() />
-                <HydrationScripts options/>
-                <MetaTags/>
+                <HydrationScripts options />
+                <MetaTags />
             </head>
             <body>
-                <App/>
+                <App />
             </body>
         </html>
     }
@@ -36,9 +36,9 @@ pub fn App() -> impl IntoView {
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
-        <Stylesheet id="leptos" href="/pkg/flashcard-app.css"/>
+        <Stylesheet id="leptos" href="/pkg/flashcard-app.css" />
 
-        <Title text="Review flashcards"/>
+        <Title text="Review flashcards" />
 
         <Router>
             <div class="flex min-h-screen">
@@ -63,11 +63,11 @@ pub fn App() -> impl IntoView {
                 </nav>
                 <main class="flex-1 p-4">
                     <Routes fallback=|| "Page not found.".into_view()>
-                        <Route path=StaticSegment("") view=AddCard/>
-                        <Route path=path!("/add-card") view=AddCard/>
-                        <Route path=path!("/review-cards") view=FlashcardDeck/>
-                        <Route path=path!("/list-cards") view=ListCards/>
-                        <Route path=path!("/cards/edit/:id") view=EditCard/>
+                        <Route path=StaticSegment("") view=AddCard />
+                        <Route path=path!("/add-card") view=AddCard />
+                        <Route path=path!("/review-cards") view=FlashcardDeck />
+                        <Route path=path!("/list-cards") view=ListCards />
+                        <Route path=path!("/cards/edit/:id") view=EditCard />
                     </Routes>
                 </main>
             </div>

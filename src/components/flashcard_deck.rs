@@ -67,12 +67,7 @@ pub fn FlashcardDeck() -> impl IntoView {
                     >
                         {move || {
                             let card = current_card.get().unwrap();
-                            view! {
-                                <Flashcard
-                                    card=card
-                                    on_answer=handle_answer
-                                />
-                            }
+                            view! { <Flashcard card=card on_answer=handle_answer /> }
                         }}
                     </Show>
                 }

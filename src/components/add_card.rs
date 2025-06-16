@@ -34,23 +34,49 @@ pub fn FlashcardForm(
         <div>
             <label class="flex flex-col gap-2">
                 <span>Question*:</span>
-                <input class="border rounded px-3 py-2" type="text" name="question" required=true value=card.question />
+                <input
+                    class="border rounded px-3 py-2"
+                    type="text"
+                    name="question"
+                    required=true
+                    value=card.question
+                />
             </label>
             <label class="flex flex-col gap-2">
                 <span>Answer*:</span>
-                <textarea class="border rounded px-3 py-2" name="answer" rows=4 cols=80 required=true >{card.answer}</textarea>
+                <textarea
+                    class="border rounded px-3 py-2"
+                    name="answer"
+                    rows=4
+                    cols=80
+                    required=true
+                >
+                    {card.answer}
+                </textarea>
             </label>
             <label class="flex flex-col gap-2">
                 <span>Examples:</span>
-                <textarea class="border rounded px-3 py-2" name="examples" rows=4 cols=80 >{card.examples}</textarea>
+                <textarea class="border rounded px-3 py-2" name="examples" rows=4 cols=80>
+                    {card.examples}
+                </textarea>
             </label>
             <label class="flex flex-col gap-2">
                 <span>Source:</span>
-                <input class="border rounded px-3 py-2" type="text" name="source" value=card.source />
+                <input
+                    class="border rounded px-3 py-2"
+                    type="text"
+                    name="source"
+                    value=card.source
+                />
             </label>
             <label class="flex flex-col gap-2">
                 <span>Tags (comma separated):</span>
-                    <input class="border rounded px-3 py-2" type="text" name="tags" value={card.tags.join(",")} />
+                <input
+                    class="border rounded px-3 py-2"
+                    type="text"
+                    name="tags"
+                    value=card.tags.join(",")
+                />
             </label>
         </div>
     }
@@ -79,10 +105,17 @@ pub fn AddCard() -> impl IntoView {
                 <ActionForm action=submit node_ref=form_ref>
                     <h2 class="text-2xl font-bold mb-4">{"Add a new card"}</h2>
                     <FlashcardForm card=Flashcard::new("".to_string(), "".to_string()) />
-                    <button class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition mt-4" type="submit">{"Create Flashcard"}</button>
+                    <button
+                        class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition mt-4"
+                        type="submit"
+                    >
+                        {"Create Flashcard"}
+                    </button>
                 </ActionForm>
                 <Show when=move || show_ack.get()>
-                    <div class="text-green-600 font-semibold mt-2">{"Card added successfully!"}</div>
+                    <div class="text-green-600 font-semibold mt-2">
+                        {"Card added successfully!"}
+                    </div>
                 </Show>
             </div>
         </div>
