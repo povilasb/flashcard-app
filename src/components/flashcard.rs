@@ -9,6 +9,7 @@ pub fn Flashcard(
     #[prop(into)] on_answer: Callback<FlashcardAnswer>,
 ) -> impl IntoView {
     let (show_answer, set_show_answer) = signal(false);
+    let (show_examples, set_show_examples) = signal(false);
 
     let handle_answer = move |answer: FlashcardAnswer| {
         on_answer.run(answer);
@@ -34,6 +35,20 @@ pub fn Flashcard(
                         {card.answer}
                     </p>
                 </div>
+                <Show
+                    when=move || show_examples.get()
+                    fallback=move || view! { }
+                >
+                    <div class="mt-4">
+                        <div class="bg-gray-50 p-4 rounded-md">
+                            <b>"Examples:"</b>
+                            <br />
+                            // TODO: use markdown
+                            { card.examples.clone() }
+                        </div>
+                    </div>
+                </Show>
+
                 <div>
                     <For
                         each=move || card.tags.clone()
@@ -47,6 +62,30 @@ pub fn Flashcard(
                         }
                     />
                 </div>
+                <a
+                    class="absolute bottom-4 right-12 text-slate-400 hover:text-slate-600 transition-colors"
+                    title="Show examples"
+                    href="#"
+                    on:click=move |ev| {
+                        ev.prevent_default();
+                        set_show_examples.set(true);
+                    }
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M8 12h8M12 8v8" />
+                    </svg>
+                </a>
                 <a
                     class="absolute bottom-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
                     title="Edit card"
