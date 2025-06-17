@@ -63,7 +63,13 @@ pub fn FlashcardDeck() -> impl IntoView {
                 view! {
                     <Show
                         when=move || current_card.get().is_some()
-                        fallback=|| view! { <div>"Loading..."</div> }
+                        fallback=|| {
+                            view! {
+                                <div class="max-w-[600px] mx-auto my-8 p-4">
+                                    <div>"No more cards to review at the moment."</div>
+                                </div>
+                            }
+                        }
                     >
                         {move || {
                             let card = current_card.get().unwrap();
