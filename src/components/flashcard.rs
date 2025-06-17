@@ -35,16 +35,13 @@ pub fn Flashcard(
                         {card.answer}
                     </p>
                 </div>
-                <Show
-                    when=move || show_examples.get()
-                    fallback=move || view! { }
-                >
+                <Show when=move || show_examples.get() fallback=move || view! {}>
                     <div class="mt-4">
                         <div class="bg-gray-50 p-4 rounded-md">
                             <b>"Examples:"</b>
                             <br />
                             // TODO: use markdown
-                            { card.examples.clone() }
+                            {card.examples.clone()}
                         </div>
                     </div>
                 </Show>
