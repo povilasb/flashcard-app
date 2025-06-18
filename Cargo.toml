@@ -30,7 +30,7 @@ name = "cli"
 path = "src/cli.rs"
 
 [[bin]]
-name = "main"
+name = "flashcard-app"
 path = "src/main.rs"
 
 [features]
@@ -61,7 +61,7 @@ panic = "abort"
 [package.metadata.leptos]
 # The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name
 output-name = "flashcard-app"
-bin-target = "main"
+bin-target = "flashcard-app"
 
 # The site root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
 site-root = "target/site"
@@ -78,7 +78,6 @@ tailwind-input-file = "style/tailwind.css"
 # Optional. Env: LEPTOS_ASSETS_DIR.
 assets-dir = "public"
 
-# The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
 site-addr = "127.0.0.1:3000"
 
 # The port to use for automatic reload monitoring
