@@ -16,6 +16,8 @@ pub fn Flashcard(
         set_show_answer.set(false);
     };
 
+    let img_src = card.img.clone().map(|s| format!("/media/{}", s));
+
     view! {
         <div class="max-w-[600px] mx-auto my-8 p-4">
             <div class="bg-white border border-slate-200 rounded-lg p-6 mb-4 shadow text-left relative">
@@ -26,7 +28,7 @@ pub fn Flashcard(
                     </p>
                 </div>
                 <div
-                    class="flex items-start gap-4 justify-start"
+                    class="flex flex-col items-start gap-4 justify-start"
                     style:display=move || if show_answer.get() { "flex" } else { "none" }
                 >
                     <p class="m-0 text-[1.1rem] leading-6 text-left" style="white-space: pre-wrap">
@@ -34,6 +36,15 @@ pub fn Flashcard(
                         <br />
                         {card.answer}
                     </p>
+                    <Show when=move || card.img.clone().is_some() fallback=move || view! {}>
+                        <div class="mt-4">
+                            <img 
+                                src={img_src.clone().unwrap_or_default()}
+                                alt="Flashcard image"
+                                class="max-w-full h-auto rounded-md border border-slate-200"
+                            />
+                        </div>
+                    </Show>
                 </div>
                 <Show when=move || show_examples.get() fallback=move || view! {}>
                     <div class="mt-4">
