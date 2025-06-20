@@ -3,3 +3,4 @@ pub mod flashcard_deck;
 pub mod flashcard;
 pub mod list_cards;
 pub mod edit_card;
+pub mod review_by_tag;

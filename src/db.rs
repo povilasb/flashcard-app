@@ -95,12 +95,14 @@ impl Database {
         Ok(())
     }
 
-    pub fn all_cards(&self) -> Result<Vec<Flashcard>, Box<dyn Error>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT f.*, group_concat(ft.tag) from flashcards f 
-            join flashcard_tags ft on f.id = ft.flashcard_id 
-            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs"
-        )?;
+    pub fn all_cards(&self, tag: Option<String>) -> Result<Vec<Flashcard>, anyhow::Error> {
+        let mut query = "SELECT f.*, group_concat(ft.tag) from flashcards f 
+            join flashcard_tags ft on f.id = ft.flashcard_id".to_string();
+        if let Some(tag) = tag {
+            query += &format!(" WHERE ft.tag = '{}'", tag);
+        }
+        query += " GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs";
+        let mut stmt = self.conn.prepare(&query)?;
         let rows = stmt.query_map([], |row| {
             Ok(Flashcard {
                 id: row.get::<_, i64>(0)?,
@@ -124,6 +126,31 @@ impl Database {
             WHERE last_reviewed + INTERVAL(review_after_secs) SECOND < CURRENT_TIMESTAMP
             GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs")?;
         let mut rows = stmt.query_map([], |row| {
+            Ok(Flashcard {
+                id: row.get::<_, i64>(0)?,
+                question: row.get(1)?,
+                answer: row.get(2)?,
+                examples: row.get(3)?,
+                source: row.get(4)?,
+                img: row.get(5)?,
+                last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
+                review_after_secs: row.get(7)?,
+                tags: row.get::<_, String>(8)?.split(",").map(|s| s.to_string()).collect(),
+            })
+        })?;
+        Ok(rows.next().map(|row| row.unwrap()))
+    }
+
+    pub fn next_by_tag(&self, tag: &String) -> Result<Option<Flashcard>, anyhow::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT f.*, group_concat(ft.tag) from flashcards f 
+            join flashcard_tags ft on f.id = ft.flashcard_id 
+            WHERE ft.tag = ?
+            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs
+            ORDER BY f.last_reviewed ASC
+            LIMIT 1"
+        )?;
+        let mut rows = stmt.query_map([tag], |row| {
             Ok(Flashcard {
                 id: row.get::<_, i64>(0)?,
                 question: row.get(1)?,

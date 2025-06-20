@@ -6,10 +6,10 @@ use crate::db::Database;
 use crate::model::Flashcard;
 
 #[server(GetAllCards, "/api")]
-async fn get_all_cards() -> Result<Vec<Flashcard>, ServerFnError> {
+pub async fn get_all_cards(tag: Option<String>) -> Result<Vec<Flashcard>, ServerFnError> {
     let db = Database::get_instance("flashcards.db").map_err(|e| ServerFnError::new(e.to_string()))?;
     let db = db.lock().unwrap();
-    db.all_cards().map_err(|e| ServerFnError::new(e.to_string()))
+    db.all_cards(tag).map_err(|e| ServerFnError::new(e.to_string()))
 }
 
 #[component]
@@ -17,7 +17,7 @@ pub fn ListCards() -> impl IntoView {
     let (cards, set_cards) = signal(Vec::new());
     Effect::new(move |_| {
         spawn_local(async move {
-            if let Ok(fetched_cards) = get_all_cards().await {
+            if let Ok(fetched_cards) = get_all_cards(None).await {
                 set_cards.set(fetched_cards);
             } else {
                 web_sys::console::error_1(&"Failed to fetch cards".into());

@@ -1,43 +1,50 @@
+
 use leptos::*;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
+use leptos_router::params::Params;
+use leptos_router::hooks::use_params;
 use crate::model::{FlashcardAnswer};
 use crate::components::flashcard::Flashcard;
 use crate::model;
+use crate::components::flashcard_deck::submit_answer;
 #[cfg(feature = "ssr")]
 use crate::db::Database;
 
-
-#[server(GetNextCard, "/api")]
-async fn get_next_card() -> Result<Option<model::Flashcard>, ServerFnError> {
+#[server(GetNextCardByTag, "/api")]
+async fn get_next_card_by_tag(tag: String) -> Result<Option<model::Flashcard>, ServerFnError> {
+    println!("get_next_card_by_tag: {:?}", tag);
     let db = Database::get_instance("flashcards.db").unwrap();
     let db = db.lock().unwrap();
-    let card = db.next().map_err(|e| ServerFnError::new(e.to_string()))?;
+    let card = db.next_by_tag(&tag).map_err(|e| ServerFnError::new(e.to_string()))?;
+    println!("card: {:?}", card);
     Ok(card)
 }
 
-#[server(SubmitAnswer, "/api")]
-pub async fn submit_answer(card_id: i64, remembered: bool) -> Result<(), ServerFnError> {
-    let db = Database::get_instance("flashcards.db").unwrap();
-    let mut db = db.lock().unwrap();
-
-    if remembered {
-        db.ok(card_id).map_err(|e| ServerFnError::new(e.to_string()))?;
-    } else {
-        db.fail(card_id).map_err(|e| ServerFnError::new(e.to_string()))?;
-    }
-
-    Ok(())
-} 
+#[derive(Params, PartialEq, Clone)]
+struct ReviewByTagParams {
+    tag: Option<String>,
+}
 
 #[component]
-pub fn FlashcardDeck() -> impl IntoView {
+pub fn ReviewByTag() -> impl IntoView {
+    let params = use_params::<ReviewByTagParams>();
+    let tag = move || {
+        params
+            .read()
+            .as_ref()
+            .ok()
+            .and_then(|params| params.tag.clone())
+            .unwrap()
+    };
+    println!("tag: {:?}", tag());
     let (current_card, set_current_card) = signal(None::<model::Flashcard>);
 
-    // Load initial card
+    // Load first card
     Effect::new(move |_| {
         spawn_local(async move {
-            let result = get_next_card().await;
+            let result = get_next_card_by_tag(tag()).await;
+            // TODO: error handling
             if let Ok(card) = result {
                 set_current_card.set(card);
             }
@@ -49,7 +56,8 @@ pub fn FlashcardDeck() -> impl IntoView {
         spawn_local(async move {
             if let Some(card) = current_card.get() {
                 let _ = submit_answer(card.id, remembered).await;
-                let result = get_next_card().await;
+                let result = get_next_card_by_tag(tag()).await;
+                // TODO: error handling
                 if let Ok(card) = result {
                     set_current_card.set(card);
                 }
@@ -58,7 +66,7 @@ pub fn FlashcardDeck() -> impl IntoView {
     });
 
     view! {
-        <div class="flashcard-deck">
+        <div>
             {move || {
                 view! {
                     <Show
@@ -66,7 +74,7 @@ pub fn FlashcardDeck() -> impl IntoView {
                         fallback=|| {
                             view! {
                                 <div class="max-w-[600px] mx-auto my-8 p-4">
-                                    <div>"No more cards to review at the moment."</div>
+                                    <div>"No cards for tag."</div>
                                 </div>
                             }
                         }
