@@ -13,11 +13,9 @@ use crate::db::Database;
 
 #[server(GetNextCardByTag, "/api")]
 async fn get_next_card_by_tag(tag: String) -> Result<Option<model::Flashcard>, ServerFnError> {
-    println!("get_next_card_by_tag: {:?}", tag);
     let db = Database::get_instance("flashcards.db").unwrap();
     let db = db.lock().unwrap();
     let card = db.next_by_tag(&tag).map_err(|e| ServerFnError::new(e.to_string()))?;
-    println!("card: {:?}", card);
     Ok(card)
 }
 
@@ -37,7 +35,6 @@ pub fn ReviewByTag() -> impl IntoView {
             .and_then(|params| params.tag.clone())
             .unwrap()
     };
-    println!("tag: {:?}", tag());
     let (current_card, set_current_card) = signal(None::<model::Flashcard>);
 
     // Load first card
