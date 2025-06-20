@@ -10,6 +10,7 @@ use crate::components::flashcard_deck::FlashcardDeck;
 use crate::components::list_cards::ListCards;
 use crate::components::edit_card::EditCard;
 use crate::components::review_by_tag::ReviewByTag;
+use crate::components::view_card::ViewCard;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -70,6 +71,7 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/review-cards/:tag") view=ReviewByTag />
                         <Route path=path!("/list-cards") view=ListCards />
                         <Route path=path!("/cards/edit/:id") view=EditCard />
+                        <Route path=path!("/cards/:id") view=ViewCard />
                     </Routes>
                 </main>
             </div>

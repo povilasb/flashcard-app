@@ -10,7 +10,7 @@ use gloo_timers::callback::Timeout;
 use leptos::task::spawn_local;
 
 #[server(GetCard, "/api")]
-async fn get_card(id: i64) -> Result<Flashcard, ServerFnError> {
+pub async fn get_card(id: i64) -> Result<Flashcard, ServerFnError> {
     let db = Database::get_instance("flashcards.db").map_err(|e| ServerFnError::new(e.to_string()))?;
     let db = db.lock().unwrap();
     db.get_card(id).map_err(|e| ServerFnError::new(e.to_string()))
