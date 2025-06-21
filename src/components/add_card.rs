@@ -14,7 +14,7 @@ pub async fn submit_card(
     examples: String,
     source: Option<String>,
     tags: String,
-    img_fname: Option<String>,
+    answer_img_fname: Option<String>,
 ) -> Result<(), ServerFnError> {
     let db = Database::get_instance("flashcards.db").unwrap();
     let db = db.lock().unwrap();
@@ -23,7 +23,7 @@ pub async fn submit_card(
     card.examples = Some(examples);
     card.source = source;
     card.tags = tags.split(',').map(|s| s.trim().to_string()).collect();
-    card.img = img_fname;
+    card.img = answer_img_fname;
 
     db.add_card(card).map_err(|e| ServerFnError::new(e.to_string()))
 }
@@ -33,7 +33,7 @@ pub async fn submit_card(
 pub fn FlashcardForm(
     #[prop(into)] card: Flashcard,
 ) -> impl IntoView {
-    let img_fname = NodeRef::<html::Input>::new();
+    let answer_img_fname = NodeRef::<html::Input>::new();
 
     view! {
         <div>
@@ -57,6 +57,21 @@ pub fn FlashcardForm(
                 >
                     {card.answer}
                 </textarea>
+                <label class="flex flex-col gap-2 ml-4">
+                    <span>Image:</span>
+                    <input
+                        class="border rounded px-3 py-2"
+                        type="file"
+                        accept="image/*"
+                        on:input=move |ev| {
+                            if let Some(files) = ev.target().unwrap().unchecked_ref::<web_sys::HtmlInputElement>().files() {
+                                let file_name = files.get(0).unwrap().name();
+                                answer_img_fname.get().unwrap().set_value(&file_name);
+                            }
+                        }
+                    />
+                    <input type="hidden" name="img_fname" node_ref=answer_img_fname />
+                </label>
             </label>
             <label class="flex flex-col gap-2">
                 <span>Examples:</span>
@@ -81,21 +96,6 @@ pub fn FlashcardForm(
                     name="tags"
                     value=card.tags.join(",")
                 />
-            </label>
-            <label class="flex flex-col gap-2">
-                <span>Image:</span>
-                <input
-                    class="border rounded px-3 py-2"
-                    type="file"
-                    accept="image/*"
-                    on:input=move |ev| {
-                        if let Some(files) = ev.target().unwrap().unchecked_ref::<web_sys::HtmlInputElement>().files() {
-                            let file_name = files.get(0).unwrap().name();
-                            img_fname.get().unwrap().set_value(&file_name);
-                        }
-                    }
-                />
-                <input type="hidden" name="img_fname" node_ref=img_fname />
             </label>
         </div>
     }
