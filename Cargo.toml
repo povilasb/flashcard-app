@@ -9,7 +9,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 leptos = { version = "0.8.2" }
 leptos_router = { version = "0.8.2" }
-axum = { version = "0.8.0", optional = true }
+axum = { version = "0.8", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 leptos_axum = { version = "0.8.0", optional = true }
 leptos_meta = { version = "0.8.0" }
@@ -25,6 +25,7 @@ toml = "0.8.22"
 glob = { version = "0.3.2", optional = true }
 gloo-timers = "0.3.0"
 duckdb = "1.3.0"
+tower-http = { version = "0.6.6", features = ["fs"], optional = true }
 
 [[bin]]
 name = "cli"
@@ -46,6 +47,7 @@ ssr = [
     "dep:leptos_axum",
     "dep:ulid",
     "dep:glob",
+    "dep:tower-http",
     "leptos/ssr",
     "leptos_meta/ssr",
     "leptos_router/ssr",

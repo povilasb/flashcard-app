@@ -9,6 +9,7 @@ async fn main() {
     use axum::http::header::{CACHE_CONTROL, PRAGMA, EXPIRES};
     use axum::http::HeaderValue;
     use axum::response::Response;
+    use tower_http::services::ServeDir;
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -17,6 +18,7 @@ async fn main() {
     let routes = generate_route_list(App);
 
     let app = Router::new()
+        .nest_service("/media", ServeDir::new("media"))
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();
             move || shell(leptos_options.clone())
