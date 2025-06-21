@@ -50,7 +50,7 @@ pub fn ListCards() -> impl IntoView {
                                                 <tr class="hover:bg-gray-50 cursor-pointer">
                                                     <td class="px-4 py-2 border">
                                                         <a href=format!(
-                                                            "/cards/edit/{}",
+                                                            "/cards/{}",
                                                             card.id.to_string(),
                                                         )>{card.question}</a>
                                                     </td>
