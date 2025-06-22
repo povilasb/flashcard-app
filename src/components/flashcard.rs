@@ -42,17 +42,19 @@ pub fn Flashcard(
                     class="flex flex-col items-start gap-4 justify-start"
                     style:display=move || if show_answer.get() { "flex" } else { "none" }
                 >
-                    <b>"A: "</b>
-                    <Markdown text={card.answer.clone()} />
-                    <Show when=move || card.img.clone().is_some() fallback=move || view! {}>
-                        <div class="mt-4">
-                            <img 
-                                src={img_src.clone().unwrap_or_default()}
-                                alt="Flashcard image"
-                                class="max-w-full h-auto rounded-md border border-slate-200"
-                            />
-                        </div>
-                    </Show>
+                    <p class="m-0 text-[1.1rem] leading-6 text-left">
+                        <b>"A: "</b>
+                        <Markdown text={card.answer.clone()} />
+                        <Show when=move || card.img.clone().is_some() fallback=move || view! {}>
+                            <div class="mt-4">
+                                <img 
+                                    src={img_src.clone().unwrap_or_default()}
+                                    alt="Flashcard image"
+                                    class="max-w-full h-auto rounded-md border border-slate-200"
+                                />
+                            </div>
+                        </Show>
+                    </p>
                 </div>
                 <Show when=move || show_examples.get() fallback=move || view! {}>
                     <div class="mt-4">
