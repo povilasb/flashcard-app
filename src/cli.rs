@@ -11,7 +11,7 @@ static DB_DIR: &str = "flashcards";
 fn main() -> Result<(), Box<dyn Error>> {
     let mut db = Database::load_or_init("flashcards.db")?;
 
-    for card in db.all_cards()? {
+    for card in db.all_cards(None)? {
         println!("Q: {}", card.question);
     }
 
