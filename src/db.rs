@@ -1,4 +1,4 @@
-//! Filesystem-based database for flashcards.
+//! duckdb-based database for flashcards.
 
 #![cfg(feature = "ssr")]
 
