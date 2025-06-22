@@ -2,6 +2,7 @@ use leptos::*;
 use leptos::prelude::*;
 use crate::model::FlashcardAnswer;
 use crate::model;
+use crate::components::markdown::Markdown;
 
 #[component]
 pub fn Flashcard(
@@ -44,7 +45,7 @@ pub fn Flashcard(
                     <p class="m-0 text-[1.1rem] leading-6 text-left" style="white-space: pre-wrap">
                         <b>"A: "</b>
                         <br />
-                        {card.answer}
+                        <Markdown text={card.answer.clone()} />
                     </p>
                     <Show when=move || card.img.clone().is_some() fallback=move || view! {}>
                         <div class="mt-4">
