@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+/* Restore default list styling */
+ol {
+  list-style: decimal;
+}
+
+ul {
+  list-style: disc;
+}
+
+menu {
+  list-style: disc;
+}

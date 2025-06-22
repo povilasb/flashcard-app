@@ -42,11 +42,8 @@ pub fn Flashcard(
                     class="flex flex-col items-start gap-4 justify-start"
                     style:display=move || if show_answer.get() { "flex" } else { "none" }
                 >
-                    <p class="m-0 text-[1.1rem] leading-6 text-left" style="white-space: pre-wrap">
-                        <b>"A: "</b>
-                        <br />
-                        <Markdown text={card.answer.clone()} />
-                    </p>
+                    <b>"A: "</b>
+                    <Markdown text={card.answer.clone()} />
                     <Show when=move || card.img.clone().is_some() fallback=move || view! {}>
                         <div class="mt-4">
                             <img 
