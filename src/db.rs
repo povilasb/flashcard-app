@@ -23,9 +23,9 @@ static INIT_TABLES_SQL: &str = "
         examples TEXT,
         source TEXT,
         img TEXT,
-        question_img TEXT,
         last_reviewed TIMESTAMP,
-        review_after_secs INTEGER
+        review_after_secs INTEGER,
+        question_img TEXT,
     );
 
     CREATE TABLE IF NOT EXISTS flashcard_tags (
