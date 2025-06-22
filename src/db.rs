@@ -111,18 +111,7 @@ impl Database {
         query += " GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs, f.question_img";
         let mut stmt = self.conn.prepare(&query)?;
         let rows = stmt.query_map([], |row| {
-            Ok(Flashcard {
-                id: row.get::<_, i64>(0)?,
-                question: row.get(1)?,
-                answer: row.get(2)?,
-                examples: row.get(3)?,
-                source: row.get(4)?,
-                img: row.get(5)?,
-                last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
-                review_after_secs: row.get(7)?,
-                question_img: row.get(8)?,
-                tags: row.get::<_, String>(9)?.split(",").map(|s| s.to_string()).collect(),
-            })
+            self.flashcard_from_row(row)
         })?;
         Ok(rows.collect::<Result<Vec<_>, _>>()?)
     }
@@ -134,18 +123,7 @@ impl Database {
             WHERE last_reviewed + INTERVAL(review_after_secs) SECOND < CURRENT_TIMESTAMP
             GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs")?;
         let mut rows = stmt.query_map([], |row| {
-            Ok(Flashcard {
-                id: row.get::<_, i64>(0)?,
-                question: row.get(1)?,
-                answer: row.get(2)?,
-                examples: row.get(3)?,
-                source: row.get(4)?,
-                img: row.get(5)?,
-                last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
-                review_after_secs: row.get(7)?,
-                question_img: row.get(8)?,
-                tags: row.get::<_, String>(9)?.split(",").map(|s| s.to_string()).collect(),
-            })
+            self.flashcard_from_row(row)
         })?;
         Ok(rows.next().map(|row| row.unwrap()))
     }
@@ -160,18 +138,7 @@ impl Database {
             LIMIT 1"
         )?;
         let mut rows = stmt.query_map([tag], |row| {
-            Ok(Flashcard {
-                id: row.get::<_, i64>(0)?,
-                question: row.get(1)?,
-                answer: row.get(2)?,
-                examples: row.get(3)?,
-                source: row.get(4)?,
-                img: row.get(5)?,
-                last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
-                review_after_secs: row.get(7)?,
-                question_img: row.get(8)?,
-                tags: row.get::<_, String>(9)?.split(",").map(|s| s.to_string()).collect(),
-            })
+            self.flashcard_from_row(row)
         })?;
         Ok(rows.next().map(|row| row.unwrap()))
     }
@@ -196,18 +163,7 @@ impl Database {
         )?;
         // TODO: decrease duplication - see other functions above
         let card = stmt.query_row([id], |row| {
-            Ok(Flashcard {
-                id: row.get::<_, i64>(0)?,
-                question: row.get(1)?,
-                answer: row.get(2)?,
-                examples: row.get(3)?,
-                source: row.get(4)?,
-                img: row.get(5)?,
-                last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
-                review_after_secs: row.get(7)?,
-                question_img: row.get(8)?,
-                tags: row.get::<_, String>(9)?.split(",").map(|s| s.to_string()).collect(),
-            })
+            self.flashcard_from_row(row)
         })?;
         Ok(card)
     }
@@ -248,6 +204,22 @@ impl Database {
         
         //self.conn.execute("COMMIT", params![])?;
         Ok(())
+    }
+
+    /// Helper function to construct a Flashcard from a database row
+    fn flashcard_from_row(&self, row: &duckdb::Row) -> Result<Flashcard, duckdb::Error> {
+        Ok(Flashcard {
+            id: row.get::<_, i64>(0)?,
+            question: row.get(1)?,
+            answer: row.get(2)?,
+            examples: row.get(3)?,
+            source: row.get(4)?,
+            img: row.get(5)?,
+            last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
+            review_after_secs: row.get(7)?,
+            question_img: row.get(8)?,
+            tags: row.get::<_, String>(9)?.split(",").map(|s| s.to_string()).collect(),
+        })
     }
 }
 
