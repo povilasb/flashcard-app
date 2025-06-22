@@ -17,15 +17,25 @@ pub fn Flashcard(
     };
 
     let img_src = card.img.clone().map(|s| format!("/media/{}", s));
+    let question_img_src = card.question_img.clone().map(|s| format!("/media/{}", s));
 
     view! {
         <div class="max-w-[600px] mx-auto my-8 p-4">
             <div class="bg-white border border-slate-200 rounded-lg p-6 mb-4 shadow text-left relative">
-                <div class="flex items-start gap-4 justify-start">
+                <div class="flex flex-col items-start gap-4 justify-start">
                     <p class="m-0 text-[1.1rem] leading-6 text-left">
                         <b>"Q: "</b>
                         {card.question}
                     </p>
+                    <Show when=move || card.question_img.clone().is_some() fallback=move || view! {}>
+                        <div class="mt-4">
+                            <img 
+                                src={question_img_src.clone().unwrap_or_default()}
+                                alt="Question image"
+                                class="max-w-full h-auto rounded-md border border-slate-200"
+                            />
+                        </div>
+                    </Show>
                 </div>
                 <div
                     class="flex flex-col items-start gap-4 justify-start"

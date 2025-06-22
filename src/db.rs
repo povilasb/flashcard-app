@@ -23,6 +23,7 @@ static INIT_TABLES_SQL: &str = "
         examples TEXT,
         source TEXT,
         img TEXT,
+        question_img TEXT,
         last_reviewed TIMESTAMP,
         review_after_secs INTEGER
     );
@@ -33,6 +34,10 @@ static INIT_TABLES_SQL: &str = "
         PRIMARY KEY (flashcard_id, tag),
         FOREIGN KEY (flashcard_id) REFERENCES flashcards(id),
     );
+";
+
+static MIGRATE_ADD_QUESTION_IMG_SQL: &str = "
+    ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS question_img TEXT;
 ";
 
 static DATABASE: OnceCell<Mutex<Database>> = OnceCell::new();
@@ -60,6 +65,7 @@ impl Database {
     pub fn load_or_init(fname: &str) -> Result<Self, anyhow::Error> {
         let conn = Connection::open(fname)?;
         conn.execute_batch(INIT_TABLES_SQL)?;
+        conn.execute_batch(MIGRATE_ADD_QUESTION_IMG_SQL)?;
         Ok(Self { conn })
     }
 
@@ -68,8 +74,8 @@ impl Database {
         self.conn.execute("BEGIN TRANSACTION", params![])?;
         
         let mut stmt = self.conn.prepare(
-            "INSERT INTO flashcards (question, answer, examples, source, img, last_reviewed, review_after_secs) 
-             VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id"
+            "INSERT INTO flashcards (question, answer, examples, source, img, question_img, last_reviewed, review_after_secs) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"
         )?;
         let flashcard_id: i64 = stmt.query_row(
             params![
@@ -78,6 +84,7 @@ impl Database {
                 card.examples,
                 card.source,
                 card.img,
+                card.question_img,
                 card.last_reviewed.to_rfc3339(),
                 card.review_after_secs,
             ],
@@ -101,7 +108,7 @@ impl Database {
         if let Some(tag) = tag {
             query += &format!(" WHERE ft.tag = '{}'", tag);
         }
-        query += " GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs";
+        query += " GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs, f.question_img";
         let mut stmt = self.conn.prepare(&query)?;
         let rows = stmt.query_map([], |row| {
             Ok(Flashcard {
@@ -113,7 +120,8 @@ impl Database {
                 img: row.get(5)?,
                 last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
                 review_after_secs: row.get(7)?,
-                tags: row.get::<_, String>(8)?.split(",").map(|s| s.to_string()).collect(),
+                question_img: row.get(8)?,
+                tags: row.get::<_, String>(9)?.split(",").map(|s| s.to_string()).collect(),
             })
         })?;
         Ok(rows.collect::<Result<Vec<_>, _>>()?)
@@ -124,7 +132,7 @@ impl Database {
             "SELECT f.*, group_concat(ft.tag) from flashcards f 
             join flashcard_tags ft on f.id = ft.flashcard_id 
             WHERE last_reviewed + INTERVAL(review_after_secs) SECOND < CURRENT_TIMESTAMP
-            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs")?;
+            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs")?;
         let mut rows = stmt.query_map([], |row| {
             Ok(Flashcard {
                 id: row.get::<_, i64>(0)?,
@@ -135,7 +143,8 @@ impl Database {
                 img: row.get(5)?,
                 last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
                 review_after_secs: row.get(7)?,
-                tags: row.get::<_, String>(8)?.split(",").map(|s| s.to_string()).collect(),
+                question_img: row.get(8)?,
+                tags: row.get::<_, String>(9)?.split(",").map(|s| s.to_string()).collect(),
             })
         })?;
         Ok(rows.next().map(|row| row.unwrap()))
@@ -146,7 +155,7 @@ impl Database {
             "SELECT f.*, group_concat(ft.tag) from flashcards f 
             join flashcard_tags ft on f.id = ft.flashcard_id 
             WHERE ft.tag = ?
-            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs
+            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs
             ORDER BY f.last_reviewed ASC
             LIMIT 1"
         )?;
@@ -160,7 +169,8 @@ impl Database {
                 img: row.get(5)?,
                 last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
                 review_after_secs: row.get(7)?,
-                tags: row.get::<_, String>(8)?.split(",").map(|s| s.to_string()).collect(),
+                question_img: row.get(8)?,
+                tags: row.get::<_, String>(9)?.split(",").map(|s| s.to_string()).collect(),
             })
         })?;
         Ok(rows.next().map(|row| row.unwrap()))
@@ -182,8 +192,9 @@ impl Database {
             "SELECT f.*, group_concat(ft.tag) from flashcards f 
             join flashcard_tags ft on f.id = ft.flashcard_id 
             WHERE f.id = ?
-            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs"
+            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs"
         )?;
+        // TODO: decrease duplication - see other functions above
         let card = stmt.query_row([id], |row| {
             Ok(Flashcard {
                 id: row.get::<_, i64>(0)?,
@@ -194,7 +205,8 @@ impl Database {
                 img: row.get(5)?,
                 last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
                 review_after_secs: row.get(7)?,
-                tags: row.get::<_, String>(8)?.split(",").map(|s| s.to_string()).collect(),
+                question_img: row.get(8)?,
+                tags: row.get::<_, String>(9)?.split(",").map(|s| s.to_string()).collect(),
             })
         })?;
         Ok(card)
@@ -208,13 +220,14 @@ impl Database {
         
         // Update the flashcard
         self.conn.execute(
-            "UPDATE flashcards SET question = ?, answer = ?, examples = ?, source = ?, img = ?, WHERE id = ?",
+            "UPDATE flashcards SET question = ?, answer = ?, examples = ?, source = ?, img = ?, question_img = ? WHERE id = ?",
             params![
                 card.question,
                 card.answer,
                 card.examples,
                 card.source,
                 card.img,
+                card.question_img,
                 card.id,
             ]
         )?;

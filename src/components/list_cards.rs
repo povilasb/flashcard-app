@@ -17,10 +17,9 @@ pub fn ListCards() -> impl IntoView {
     let (cards, set_cards) = signal(Vec::new());
     Effect::new(move |_| {
         spawn_local(async move {
-            if let Ok(fetched_cards) = get_all_cards(None).await {
-                set_cards.set(fetched_cards);
-            } else {
-                web_sys::console::error_1(&"Failed to fetch cards".into());
+            match get_all_cards(None).await {
+                Ok(fetched_cards) => set_cards.set(fetched_cards),
+                Err(e) => web_sys::console::error_1(&format!("Failed to fetch cards: {}", e).into()),
             }
         });
     });

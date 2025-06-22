@@ -15,6 +15,7 @@ pub async fn submit_card(
     source: Option<String>,
     tags: String,
     answer_img_fname: Option<String>,
+    question_img_fname: Option<String>,
 ) -> Result<(), ServerFnError> {
     let db = Database::get_instance("flashcards.db").unwrap();
     let db = db.lock().unwrap();
@@ -24,6 +25,7 @@ pub async fn submit_card(
     card.source = source;
     card.tags = tags.split(',').map(|s| s.trim().to_string()).collect();
     card.img = answer_img_fname;
+    card.question_img = question_img_fname;
 
     db.add_card(card).map_err(|e| ServerFnError::new(e.to_string()))
 }
@@ -34,6 +36,7 @@ pub fn FlashcardForm(
     #[prop(into)] card: Flashcard,
 ) -> impl IntoView {
     let answer_img_fname = NodeRef::<html::Input>::new();
+    let question_img_fname = NodeRef::<html::Input>::new();
 
     view! {
         <div>
@@ -46,6 +49,21 @@ pub fn FlashcardForm(
                     required=true
                     value=card.question
                 />
+                <label class="flex flex-col gap-2 ml-4">
+                    <span>Image:</span>
+                    <input
+                        class="border rounded px-3 py-2"
+                        type="file"
+                        accept="image/*"
+                        on:input=move |ev| {
+                            if let Some(files) = ev.target().unwrap().unchecked_ref::<web_sys::HtmlInputElement>().files() {
+                                let file_name = files.get(0).unwrap().name();
+                                question_img_fname.get().unwrap().set_value(&file_name);
+                            }
+                        }
+                    />
+                    <input type="hidden" name="question_img_fname" node_ref=question_img_fname />
+                </label>
             </label>
             <label class="flex flex-col gap-2">
                 <span>Answer:</span>
@@ -70,7 +88,7 @@ pub fn FlashcardForm(
                             }
                         }
                     />
-                    <input type="hidden" name="img_fname" node_ref=answer_img_fname />
+                    <input type="hidden" name="answer_img_fname" node_ref=answer_img_fname />
                 </label>
             </label>
             <label class="flex flex-col gap-2">

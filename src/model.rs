@@ -12,6 +12,7 @@ pub struct Flashcard {
     pub examples: Option<String>,
     pub source: Option<String>,
     pub img: Option<String>,
+    pub question_img: Option<String>,
     pub tags: Vec<String>,
 
     pub last_reviewed: DateTime<Utc>,
@@ -27,6 +28,7 @@ impl Flashcard {
             examples: None,
             source: None,
             img: None,
+            question_img: None,
             tags: Vec::new(),
             last_reviewed: Utc::now(),
             review_after_secs: 43200, // 12 hours
