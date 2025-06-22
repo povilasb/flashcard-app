@@ -27,7 +27,7 @@ pub async fn submit_card(
     card.img = answer_img_fname;
     card.question_img = question_img_fname;
 
-    db.add_card(card).map_err(|e| ServerFnError::new(e.to_string()))
+    db.add_card(&card).map_err(|e| ServerFnError::new(e.to_string()))
 }
 
 /// Reused to add or edit a card.

@@ -69,8 +69,7 @@ impl Database {
         Ok(Self { conn })
     }
 
-    // TODO: take a reference
-    pub fn add_card(&self, card: Flashcard) -> Result<(), anyhow::Error> {
+    pub fn add_card(&self, card: &Flashcard) -> Result<(), anyhow::Error> {
         self.conn.execute("BEGIN TRANSACTION", params![])?;
         
         let mut stmt = self.conn.prepare(
@@ -91,7 +90,7 @@ impl Database {
             |row| row.get(0)
         )?;
         
-        for tag in card.tags {
+        for tag in card.tags.iter() {
             self.conn.execute(
                 "INSERT INTO flashcard_tags (flashcard_id, tag) VALUES (?, ?)",
                 params![flashcard_id, tag]
@@ -242,11 +241,10 @@ mod tests {
         let db = Database::in_memory().unwrap();
         let mut card = Flashcard::new("question1".to_string(), "answer1".to_string());
         card.tags = vec!["tag1".to_string()];
-        let mut new_card = card.clone();
-        new_card.id = 1;
-        db.add_card(card).unwrap();
+        db.add_card(&card).unwrap();
 
-        db.update_card(&new_card).unwrap();
+        card.id = 1;
+        db.update_card(&card).unwrap();
 
         let card = db.get_card(1).unwrap();
         assert_eq!(card.tags, vec!["tag1".to_string()]);
