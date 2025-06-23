@@ -150,8 +150,7 @@ impl Database {
         Ok(rows.next().map(|row| row.unwrap()))
     }
 
-    // TODO: remove mut?
-    pub fn ok(&mut self, card_id: i64) -> Result<(), Box<dyn Error>> {
+    pub fn ok(&self, card_id: i64) -> Result<(), Box<dyn Error>> {
         self.conn.execute("BEGIN TRANSACTION", params![])?;
         self.conn.execute("UPDATE flashcards SET last_reviewed = CURRENT_TIMESTAMP, review_after_secs = review_after_secs * 2 WHERE id = ?", params![card_id])?;
         self.conn.execute("INSERT INTO review_history (flashcard_id, review_date, remembered) VALUES (?, CURRENT_TIMESTAMP, TRUE)", params![card_id])?;
@@ -159,7 +158,7 @@ impl Database {
         Ok(())
     }
     
-    pub fn fail(&mut self, card_id: i64) -> Result<(), Box<dyn Error>> {
+    pub fn fail(&self, card_id: i64) -> Result<(), Box<dyn Error>> {
         self.conn.execute("BEGIN TRANSACTION", params![])?;
         // Don't prompt to review immediately.
         self.conn.execute("UPDATE flashcards SET last_reviewed = CURRENT_TIMESTAMP, review_after_secs = 3600 WHERE id = ?", params![card_id])?;
@@ -222,7 +221,7 @@ impl Database {
 
     pub fn review_history(&self) -> Result<Vec<ReviewHistory>, anyhow::Error> {
         let mut stmt = self.conn.prepare("SELECT * FROM review_history")?;
-        let mut rows = stmt.query_map([], |row| {
+        let rows = stmt.query_map([], |row| {
             Ok(ReviewHistory {
                 flashcard_id: row.get::<_, i64>(0)?,
                 review_date: from_duckdb_timestamp(row.get::<_, Value>(1)?),
@@ -279,7 +278,7 @@ mod tests {
 
     #[test]
     fn test_ok_appends_to_review_history() {
-        let mut db = Database::in_memory().unwrap();
+        let db = Database::in_memory().unwrap();
         let card = Flashcard::new("question1".to_string(), "answer1".to_string());
         db.add_card(&card).unwrap();
 
