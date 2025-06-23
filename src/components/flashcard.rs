@@ -104,6 +104,9 @@ pub fn Flashcard(
                         <path d="M8 12h8M12 8v8" />
                     </svg>
                 </a>
+                <div class="absolute bottom-4 right-20 text-slate-400 text-xs">
+                    "Last reviewed: "{card.last_reviewed.format("%Y-%m-%d %H:%M").to_string()}
+                </div>
                 <a
                     class="absolute bottom-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
                     title="Edit card"
