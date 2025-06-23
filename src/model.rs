@@ -41,3 +41,10 @@ pub enum FlashcardAnswer {
     Remember,
     Not,
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ReviewHistory {
+    pub flashcard_id: i64,
+    pub review_date: DateTime<Utc>,
+    pub remembered: bool,
+}

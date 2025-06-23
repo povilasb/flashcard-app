@@ -6,7 +6,7 @@ use std::error::Error;
 use anyhow::Result;
 use once_cell::sync::OnceCell;
 use std::sync::Mutex;
-use crate::model::Flashcard;
+use crate::model::{Flashcard, ReviewHistory};
 use duckdb::{params, Connection};
 use duckdb::types::Value;
 use chrono::{DateTime, Utc};
@@ -32,6 +32,14 @@ static INIT_TABLES_SQL: &str = "
         flashcard_id INTEGER,
         tag TEXT,
         PRIMARY KEY (flashcard_id, tag),
+        FOREIGN KEY (flashcard_id) REFERENCES flashcards(id),
+    );
+
+    CREATE TABLE IF NOT EXISTS review_history (
+        flashcard_id INTEGER,
+        review_date TIMESTAMP,
+        remembered BOOLEAN,
+        PRIMARY KEY (flashcard_id, review_date),
         FOREIGN KEY (flashcard_id) REFERENCES flashcards(id),
     );
 ";
@@ -142,14 +150,21 @@ impl Database {
         Ok(rows.next().map(|row| row.unwrap()))
     }
 
+    // TODO: remove mut?
     pub fn ok(&mut self, card_id: i64) -> Result<(), Box<dyn Error>> {
+        self.conn.execute("BEGIN TRANSACTION", params![])?;
         self.conn.execute("UPDATE flashcards SET last_reviewed = CURRENT_TIMESTAMP, review_after_secs = review_after_secs * 2 WHERE id = ?", params![card_id])?;
+        self.conn.execute("INSERT INTO review_history (flashcard_id, review_date, remembered) VALUES (?, CURRENT_TIMESTAMP, TRUE)", params![card_id])?;
+        self.conn.execute("COMMIT", params![])?;
         Ok(())
     }
     
     pub fn fail(&mut self, card_id: i64) -> Result<(), Box<dyn Error>> {
+        self.conn.execute("BEGIN TRANSACTION", params![])?;
         // Don't prompt to review immediately.
         self.conn.execute("UPDATE flashcards SET last_reviewed = CURRENT_TIMESTAMP, review_after_secs = 3600 WHERE id = ?", params![card_id])?;
+        self.conn.execute("INSERT INTO review_history (flashcard_id, review_date, remembered) VALUES (?, CURRENT_TIMESTAMP, FALSE)", params![card_id])?;
+        self.conn.execute("COMMIT", params![])?;
         Ok(())
     }
 
@@ -205,6 +220,18 @@ impl Database {
         Ok(())
     }
 
+    pub fn review_history(&self) -> Result<Vec<ReviewHistory>, anyhow::Error> {
+        let mut stmt = self.conn.prepare("SELECT * FROM review_history")?;
+        let mut rows = stmt.query_map([], |row| {
+            Ok(ReviewHistory {
+                flashcard_id: row.get::<_, i64>(0)?,
+                review_date: from_duckdb_timestamp(row.get::<_, Value>(1)?),
+                remembered: row.get::<_, bool>(2)?,
+            })
+        })?;
+        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+    }
+
     /// Helper function to construct a Flashcard from a database row
     fn flashcard_from_row(&self, row: &duckdb::Row) -> Result<Flashcard, duckdb::Error> {
         Ok(Flashcard {
@@ -248,5 +275,20 @@ mod tests {
 
         let card = db.get_card(1).unwrap();
         assert_eq!(card.tags, vec!["tag1".to_string()]);
+    }
+
+    #[test]
+    fn test_ok_appends_to_review_history() {
+        let mut db = Database::in_memory().unwrap();
+        let card = Flashcard::new("question1".to_string(), "answer1".to_string());
+        db.add_card(&card).unwrap();
+
+        db.ok(1).unwrap();
+
+        let review_history = db.review_history().unwrap();
+        assert_eq!(review_history.len(), 1);
+        assert_eq!(review_history[0].flashcard_id, 1);
+        assert_eq!(review_history[0].review_date.format("%Y-%m-%d").to_string(), Utc::now().format("%Y-%m-%d").to_string());
+        assert_eq!(review_history[0].remembered, true);
     }
 }
