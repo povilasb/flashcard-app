@@ -44,10 +44,6 @@ static INIT_TABLES_SQL: &str = "
     );
 ";
 
-static MIGRATE_ADD_QUESTION_IMG_SQL: &str = "
-    ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS question_img TEXT;
-";
-
 static DATABASE: OnceCell<Mutex<Database>> = OnceCell::new();
 
 pub struct Database {
@@ -73,7 +69,6 @@ impl Database {
     pub fn load_or_init(fname: &str) -> Result<Self, anyhow::Error> {
         let conn = Connection::open(fname)?;
         conn.execute_batch(INIT_TABLES_SQL)?;
-        conn.execute_batch(MIGRATE_ADD_QUESTION_IMG_SQL)?;
         Ok(Self { conn })
     }
 
