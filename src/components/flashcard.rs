@@ -25,8 +25,7 @@ pub fn Flashcard(
             <div class="bg-white border border-slate-200 rounded-lg p-6 mb-4 shadow text-left relative">
                 <div class="flex flex-col items-start gap-4 justify-start">
                     <p class="m-0 text-[1.1rem] leading-6 text-left">
-                        <b>"Q: "</b>
-                        {card.question}
+                        <Markdown text={card.question.clone()} />
                     </p>
                     <Show when=move || card.question_img.clone().is_some() fallback=move || view! {}>
                         <div class="mt-4">
@@ -43,7 +42,7 @@ pub fn Flashcard(
                     style:display=move || if show_answer.get() { "flex" } else { "none" }
                 >
                     <p class="m-0 text-[1.1rem] leading-6 text-left">
-                        <b>"A: "</b>
+                        <hr class="my-2" />
                         <Markdown text={card.answer.clone()} />
                         <Show when=move || card.img.clone().is_some() fallback=move || view! {}>
                             <div class="mt-4">
@@ -61,8 +60,7 @@ pub fn Flashcard(
                         <div class="bg-gray-50 p-4 rounded-md">
                             <b>"Examples:"</b>
                             <br />
-                            // TODO: use markdown
-                            {card.examples.clone()}
+                            <Markdown text={card.examples.clone().unwrap_or_default()} />
                         </div>
                     </div>
                 </Show>
