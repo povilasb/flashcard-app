@@ -24,6 +24,7 @@ async fn update_card(
     examples: String,
     source: Option<String>,
     tags: String,
+    question_img_fname: Option<String>,
 ) -> Result<(), ServerFnError> {
     let db = Database::get_instance("flashcards.db").map_err(|e| ServerFnError::new(e.to_string()))?;
     let db = db.lock().unwrap();
@@ -32,6 +33,7 @@ async fn update_card(
     card.id = id;
     card.examples = Some(examples);
     card.source = source;
+    card.question_img = question_img_fname;
     card.tags = tags.split(',')
         .map(|s| s.trim().to_string())
         .collect::<std::collections::HashSet<_>>()
