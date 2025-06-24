@@ -5,6 +5,7 @@ use leptos_router::params::Params;
 use leptos_router::hooks::use_params;
 use crate::model::{FlashcardAnswer};
 use crate::components::flashcard::Flashcard;
+use crate::components::error_notification::ErrorNotification;
 use crate::model;
 use crate::components::flashcard_deck::submit_answer;
 #[cfg(feature = "ssr")]
@@ -34,32 +35,49 @@ pub fn ReviewByTag() -> impl IntoView {
             .unwrap()
     };
     let (cards, set_cards) = signal(Vec::<model::Flashcard>::new());
+    let (error, set_error) = signal(None::<String>);
 
     // Load cards
     Effect::new(move |_| {
         spawn_local(async move {
-            if let Ok(loaded_cards) = get_cards_by_tag(tag()).await {
-                set_cards.set(loaded_cards);
+            match get_cards_by_tag(tag()).await {
+                Ok(loaded_cards) => {
+                    set_cards.set(loaded_cards);
+                    set_error.set(None);
+                }
+                Err(e) => {
+                    set_error.set(Some(format!("Failed to load cards:\n {}", e)));
+                }
             }
-            // TODO: error handling
         });
     });
 
-    view! { <ReviewCards cards=cards /> }
-} 
+    view! { 
+        <ReviewCards cards=cards />
+        <ErrorNotification error=error />
+    }
+}
 
 #[component]
 pub fn ReviewCards(
     #[prop(into)] cards: Signal<Vec<model::Flashcard>>,
 ) -> impl IntoView {
-    let (current_index, set_current_index) = signal(0usize);
+    let current_index = RwSignal::new(0usize);
+    let (error, set_error) = signal(None::<String>);
 
     let handle_answer = Callback::new(move |answer: FlashcardAnswer| {
         let remembered = matches!(answer, FlashcardAnswer::Remember);
         spawn_local(async move {
             if let Some(card) = cards.get().get(current_index.get()) {
-                let _ = submit_answer(card.id, remembered).await;
-                set_current_index.update(|i| *i = *i + 1);
+                match submit_answer(card.id, remembered).await {
+                    Ok(_) => {
+                        current_index.set(current_index.get() + 1);
+                        set_error.set(None);
+                    }
+                    Err(e) => {
+                        set_error.set(Some(format!("Failed to submit answer:\n{}", e)));
+                    }
+                }
             }
         });
     });
@@ -92,6 +110,7 @@ pub fn ReviewCards(
                     view! { <Flashcard card=card.clone() on_answer=handle_answer /> }
                 }}
             </Show>
+            <ErrorNotification error=error />
         </div>
     }
 }

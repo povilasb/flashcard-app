@@ -21,6 +21,8 @@ pub async fn submit_answer(card_id: i64, remembered: bool) -> Result<(), ServerF
     let db = Database::get_instance("flashcards.db").unwrap();
     let db = db.lock().unwrap();
 
+    return Err(ServerFnError::new("Not implemented".to_string()));
+
     if remembered {
         db.ok(card_id).map_err(|e| ServerFnError::new(e.to_string()))?;
     } else {
