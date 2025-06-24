@@ -34,9 +34,8 @@ pub fn ReviewByTag() -> impl IntoView {
             .unwrap()
     };
     let (cards, set_cards) = signal(Vec::<model::Flashcard>::new());
-    let (current_index, set_current_index) = signal(0usize);
 
-    // Load first card
+    // Load cards
     Effect::new(move |_| {
         spawn_local(async move {
             if let Ok(loaded_cards) = get_cards_by_tag(tag()).await {
@@ -46,11 +45,19 @@ pub fn ReviewByTag() -> impl IntoView {
         });
     });
 
+    view! { <ReviewCards cards=cards /> }
+} 
+
+#[component]
+pub fn ReviewCards(
+    #[prop(into)] cards: Signal<Vec<model::Flashcard>>,
+) -> impl IntoView {
+    let (current_index, set_current_index) = signal(0usize);
+
     let handle_answer = Callback::new(move |answer: FlashcardAnswer| {
         let remembered = matches!(answer, FlashcardAnswer::Remember);
         spawn_local(async move {
-            let current_cards = cards.get();
-            if let Some(card) = current_cards.get(current_index.get()) {
+            if let Some(card) = cards.get().get(current_index.get()) {
                 let _ = submit_answer(card.id, remembered).await;
                 set_current_index.update(|i| *i = *i + 1);
             }
@@ -70,8 +77,7 @@ pub fn ReviewByTag() -> impl IntoView {
             ></progress>
             <Show
                 when=move || {
-                    let current_cards = cards.get();
-                    current_cards.get(current_index.get()).is_some()
+                    cards.get().get(current_index.get()).is_some()
                 }
                 fallback=|| {
                     view! {
@@ -82,11 +88,10 @@ pub fn ReviewByTag() -> impl IntoView {
                 }
             >
                 {move || {
-                    let current_cards = cards.get();
-                    let card = current_cards.get(current_index.get()).unwrap();
+                    let card = cards.get().get(current_index.get()).cloned().unwrap();
                     view! { <Flashcard card=card.clone() on_answer=handle_answer /> }
                 }}
             </Show>
         </div>
     }
-} 
+}
