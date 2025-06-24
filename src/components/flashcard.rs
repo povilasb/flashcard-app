@@ -42,7 +42,7 @@ pub fn Flashcard(
                     style:display=move || if show_answer.get() { "flex" } else { "none" }
                 >
                     <p class="m-0 text-[1.1rem] leading-6 text-left">
-                        <hr class="my-2" />
+                        <hr class="my-2 mb-4" />
                         <Markdown text={card.answer.clone()} />
                         <Show when=move || card.img.clone().is_some() fallback=move || view! {}>
                             <div class="mt-4">
