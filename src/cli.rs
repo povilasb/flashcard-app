@@ -1,3 +1,6 @@
+//! Usage:
+//! cargo run --bin=cli --features=ssr
+
 mod model;
 mod db;
 
@@ -11,8 +14,8 @@ static DB_DIR: &str = "flashcards";
 fn main() -> Result<(), Box<dyn Error>> {
     let mut db = Database::load_or_init("flashcards.db")?;
 
-    for card in db.all_cards(None)? {
-        println!("Q: {}", card.question);
+    for card in db.cards_by_tag("rust".to_string(), 10)? {
+        println!("Q: {} {}", card.last_reviewed, card.question);
     }
 
     return Ok(());

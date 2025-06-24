@@ -1,4 +1,3 @@
-
 use leptos::*;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -11,12 +10,11 @@ use crate::components::flashcard_deck::submit_answer;
 #[cfg(feature = "ssr")]
 use crate::db::Database;
 
-#[server(GetNextCardByTag, "/api")]
-async fn get_next_card_by_tag(tag: String) -> Result<Option<model::Flashcard>, ServerFnError> {
+#[server(GetCardsByTag, "/api")]
+async fn get_cards_by_tag(tag: String) -> Result<Vec<model::Flashcard>, ServerFnError> {
     let db = Database::get_instance("flashcards.db").unwrap();
     let db = db.lock().unwrap();
-    let card = db.next_by_tag(&tag).map_err(|e| ServerFnError::new(e.to_string()))?;
-    Ok(card)
+    db.all_cards(Some(tag)).map_err(ServerFnError::new)
 }
 
 #[derive(Params, PartialEq, Clone)]
@@ -35,54 +33,60 @@ pub fn ReviewByTag() -> impl IntoView {
             .and_then(|params| params.tag.clone())
             .unwrap()
     };
-    let (current_card, set_current_card) = signal(None::<model::Flashcard>);
+    let (cards, set_cards) = signal(Vec::<model::Flashcard>::new());
+    let (current_index, set_current_index) = signal(0usize);
 
     // Load first card
     Effect::new(move |_| {
         spawn_local(async move {
-            let result = get_next_card_by_tag(tag()).await;
-            // TODO: error handling
-            if let Ok(card) = result {
-                set_current_card.set(card);
+            if let Ok(loaded_cards) = get_cards_by_tag(tag()).await {
+                set_cards.set(loaded_cards);
             }
+            // TODO: error handling
         });
     });
 
     let handle_answer = Callback::new(move |answer: FlashcardAnswer| {
         let remembered = matches!(answer, FlashcardAnswer::Remember);
         spawn_local(async move {
-            if let Some(card) = current_card.get() {
+            let current_cards = cards.get();
+            if let Some(card) = current_cards.get(current_index.get()) {
                 let _ = submit_answer(card.id, remembered).await;
-                let result = get_next_card_by_tag(tag()).await;
-                // TODO: error handling
-                if let Ok(card) = result {
-                    set_current_card.set(card);
-                }
+                set_current_index.update(|i| *i = *i + 1);
             }
         });
     });
 
     view! {
-        <div>
-            {move || {
-                view! {
-                    <Show
-                        when=move || current_card.get().is_some()
-                        fallback=|| {
-                            view! {
-                                <div class="max-w-[600px] mx-auto my-8 p-4">
-                                    <div>"No cards for tag."</div>
-                                </div>
-                            }
-                        }
-                    >
-                        {move || {
-                            let card = current_card.get().unwrap();
-                            view! { <Flashcard card=card on_answer=handle_answer /> }
-                        }}
-                    </Show>
+        <div class="review-cards">
+            <progress
+                class="w-full h-2.5 rounded-full"
+                value={move || {
+                    let total = cards.get().len();
+                    if total == 0 { return 0; }
+                    current_index.get() + 1
+                }}
+                max={move || cards.get().len()}
+            ></progress>
+            <Show
+                when=move || {
+                    let current_cards = cards.get();
+                    current_cards.get(current_index.get()).is_some()
                 }
-            }}
+                fallback=|| {
+                    view! {
+                        <div class="max-w-[600px] mx-auto my-8 p-4">
+                            <div>"Done"</div>
+                        </div>
+                    }
+                }
+            >
+                {move || {
+                    let current_cards = cards.get();
+                    let card = current_cards.get(current_index.get()).unwrap();
+                    view! { <Flashcard card=card.clone() on_answer=handle_answer /> }
+                }}
+            </Show>
         </div>
     }
 } 

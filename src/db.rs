@@ -111,8 +111,23 @@ impl Database {
             query += &format!(" WHERE ft.tag = '{}'", tag);
         }
         query += " GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs, f.question_img";
+
         let mut stmt = self.conn.prepare(&query)?;
         let rows = stmt.query_map([], |row| {
+            self.flashcard_from_row(row)
+        })?;
+        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+    }
+    
+    pub fn cards_by_tag(&self, tag: String, limit: u64) -> Result<Vec<Flashcard>, anyhow::Error> {
+        let mut query = "SELECT f.*, group_concat(ft.tag) from flashcards f 
+            join flashcard_tags ft on f.id = ft.flashcard_id 
+            WHERE ft.tag = ?
+            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs
+            ORDER BY f.last_reviewed DESC
+            LIMIT ?";
+        let mut stmt = self.conn.prepare(&query)?;
+        let rows = stmt.query_map([tag, limit.to_string()], |row| {
             self.flashcard_from_row(row)
         })?;
         Ok(rows.collect::<Result<Vec<_>, _>>()?)

@@ -20,3 +20,7 @@ cargo watch -x 'run --bin=web'
 ## Caveats
 
 * An image can be loaded only from `./media`. 
+
+## Architecture
+
+* Checkout the `src/app.rs` for different routes and views.
