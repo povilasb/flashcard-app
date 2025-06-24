@@ -133,7 +133,7 @@ impl Database {
         Ok(rows.collect::<Result<Vec<_>, _>>()?)
     }
 
-    pub fn next(&self) -> Result<Option<Flashcard>, anyhow::Error> {
+    pub fn cards_to_review(&self) -> Result<Vec<Flashcard>, anyhow::Error> {
         let mut stmt = self.conn.prepare(
             "SELECT f.*, group_concat(ft.tag) from flashcards f 
             join flashcard_tags ft on f.id = ft.flashcard_id 
@@ -142,7 +142,7 @@ impl Database {
         let mut rows = stmt.query_map([], |row| {
             self.flashcard_from_row(row)
         })?;
-        Ok(rows.next().map(|row| row.unwrap()))
+        Ok(rows.collect::<Result<Vec<_>, _>>()?)
     }
 
     pub fn next_by_tag(&self, tag: &String) -> Result<Option<Flashcard>, anyhow::Error> {

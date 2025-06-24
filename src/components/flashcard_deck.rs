@@ -1,19 +1,18 @@
 use leptos::*;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use crate::model::{FlashcardAnswer};
-use crate::components::flashcard::Flashcard;
 use crate::model;
 #[cfg(feature = "ssr")]
 use crate::db::Database;
+use crate::components::review_by_tag::ReviewCards;
+use crate::components::error_notification::ErrorNotification;
 
 
-#[server(GetNextCard, "/api")]
-async fn get_next_card() -> Result<Option<model::Flashcard>, ServerFnError> {
+#[server(GetNextCards, "/api")]
+async fn get_cards() -> Result<Vec<model::Flashcard>, ServerFnError> {
     let db = Database::get_instance("flashcards.db").unwrap();
     let db = db.lock().unwrap();
-    let card = db.next().map_err(|e| ServerFnError::new(e.to_string()))?;
-    Ok(card)
+    db.cards_to_review().map_err(|e| ServerFnError::new(e.to_string()))
 }
 
 #[server(SubmitAnswer, "/api")]
@@ -32,52 +31,27 @@ pub async fn submit_answer(card_id: i64, remembered: bool) -> Result<(), ServerF
 
 #[component]
 pub fn FlashcardDeck() -> impl IntoView {
-    let (current_card, set_current_card) = signal(None::<model::Flashcard>);
+    let (cards, set_cards) = signal(Vec::<model::Flashcard>::new());
+    let (error, set_error) = signal(None::<String>);
 
-    // Load initial card
+    // Load cards
     Effect::new(move |_| {
         spawn_local(async move {
-            let result = get_next_card().await;
-            if let Ok(card) = result {
-                set_current_card.set(card);
-            }
-        });
-    });
-
-    let handle_answer = Callback::new(move |answer: FlashcardAnswer| {
-        let remembered = matches!(answer, FlashcardAnswer::Remember);
-        spawn_local(async move {
-            if let Some(card) = current_card.get() {
-                let _ = submit_answer(card.id, remembered).await;
-                let result = get_next_card().await;
-                if let Ok(card) = result {
-                    set_current_card.set(card);
+            match get_cards().await {
+                Ok(loaded_cards) => {
+                    set_cards.set(loaded_cards);
+                    set_error.set(None);
+                }
+                Err(e) => {
+                    set_error.set(Some(format!("Failed to load cards:\n {}", e)));
                 }
             }
         });
     });
+
 
     view! {
-        <div class="flashcard-deck">
-            {move || {
-                view! {
-                    <Show
-                        when=move || current_card.get().is_some()
-                        fallback=|| {
-                            view! {
-                                <div class="max-w-[600px] mx-auto my-8 p-4">
-                                    <div>"No more cards to review at the moment."</div>
-                                </div>
-                            }
-                        }
-                    >
-                        {move || {
-                            let card = current_card.get().unwrap();
-                            view! { <Flashcard card=card on_answer=handle_answer /> }
-                        }}
-                    </Show>
-                }
-            }}
-        </div>
+        <ReviewCards cards=cards />
+        <ErrorNotification error=error />
     }
 } 
