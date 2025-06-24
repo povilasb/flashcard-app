@@ -169,7 +169,6 @@ impl Database {
             WHERE f.id = ?
             GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs"
         )?;
-        // TODO: decrease duplication - see other functions above
         let card = stmt.query_row([id], |row| {
             self.flashcard_from_row(row)
         })?;
