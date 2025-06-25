@@ -125,7 +125,7 @@ impl Database {
             join flashcard_tags ft on f.id = ft.flashcard_id 
             WHERE last_reviewed + INTERVAL(review_after_secs) SECOND < CURRENT_TIMESTAMP
             GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs")?;
-        let mut rows = stmt.query_map([], |row| {
+        let rows = stmt.query_map([], |row| {
             self.flashcard_from_row(row)
         })?;
         Ok(rows.collect::<Result<Vec<_>, _>>()?)
