@@ -53,7 +53,7 @@ pub struct Database {
 impl Database {
     pub fn get_instance() -> Result<&'static Mutex<Database>, anyhow::Error> {
         DATABASE.get_or_try_init(|| {
-            let db = Database::load_or_init("flashcards.db")?;
+            let db = Database::load_or_init("db/flashcards.db")?;
             Ok(Mutex::new(db))
         })
     }

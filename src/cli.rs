@@ -9,16 +9,10 @@ use std::error::Error;
 use std::io;
 use crate::db::Database;
 
-static DB_DIR: &str = "flashcards";
+static DB_DIR: &str = "db";
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut db = Database::load_or_init("flashcards.db")?;
-
-    for card in db.cards_by_tag("rust".to_string(), 10)? {
-        println!("Q: {} {}", card.last_reviewed, card.question);
-    }
-
-    return Ok(());
+    let mut db = Database::load_or_init("db/flashcards.db")?;
 
     let media_dir = env::current_dir()?.join(DB_DIR).join("media");
 

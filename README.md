@@ -19,7 +19,7 @@ cargo watch -x 'run --bin=web'
 
 ## Caveats
 
-* An image can be loaded only from `./media`. 
+* An image can be loaded only from `./db/media`. 
 
 ## Architecture
 

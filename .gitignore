@@ -1,4 +1,5 @@
 /target
 /dist
 /flashcards
-node_modules/
+/node_modules
+/db

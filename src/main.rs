@@ -18,7 +18,7 @@ async fn main() {
     let routes = generate_route_list(App);
 
     let app = Router::new()
-        .nest_service("/media", ServeDir::new("media"))
+        .nest_service("/media", ServeDir::new("db/media"))
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();
             move || shell(leptos_options.clone())
