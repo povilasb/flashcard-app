@@ -9,15 +9,13 @@ use crate::components::flashcard::Flashcard;
 
 #[server(GetNextCards, "/api")]
 async fn get_cards() -> Result<Vec<model::Flashcard>, ServerFnError> {
-    let db = Database::get_instance("flashcards.db").unwrap();
-    let db = db.lock().unwrap();
+    let db = Database::get_instance().unwrap().lock().unwrap();
     db.cards_to_review().map_err(|e| ServerFnError::new(e.to_string()))
 }
 
 #[server(SubmitAnswer, "/api")]
 pub async fn submit_answer(card_id: i64, remembered: bool) -> Result<(), ServerFnError> {
-    let db = Database::get_instance("flashcards.db").unwrap();
-    let db = db.lock().unwrap();
+    let db = Database::get_instance().unwrap().lock().unwrap();
 
     if remembered {
         db.ok(card_id).map_err(|e| ServerFnError::new(e.to_string()))?;

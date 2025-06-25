@@ -11,8 +11,7 @@ use crate::db::Database;
 
 #[server(GetCardsByTag, "/api")]
 async fn get_cards_by_tag(tag: String) -> Result<Vec<model::Flashcard>, ServerFnError> {
-    let db = Database::get_instance("flashcards.db").unwrap();
-    let db = db.lock().unwrap();
+    let db = Database::get_instance().unwrap().lock().unwrap();
     db.all_cards(Some(tag)).map_err(ServerFnError::new)
 }
 

@@ -51,9 +51,9 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn get_instance(cards_dir: &str) -> Result<&'static Mutex<Database>, anyhow::Error> {
+    pub fn get_instance() -> Result<&'static Mutex<Database>, anyhow::Error> {
         DATABASE.get_or_try_init(|| {
-            let db = Database::load_or_init(cards_dir)?;
+            let db = Database::load_or_init("flashcards.db")?;
             Ok(Mutex::new(db))
         })
     }

@@ -11,8 +11,7 @@ use leptos::task::spawn_local;
 
 #[server(GetCard, "/api")]
 pub async fn get_card(id: i64) -> Result<Flashcard, ServerFnError> {
-    let db = Database::get_instance("flashcards.db").map_err(|e| ServerFnError::new(e.to_string()))?;
-    let db = db.lock().unwrap();
+    let db = Database::get_instance().unwrap().lock().unwrap();
     db.get_card(id).map_err(|e| ServerFnError::new(e.to_string()))
 }
 
@@ -26,8 +25,7 @@ async fn update_card(
     tags: String,
     question_img_fname: Option<String>,
 ) -> Result<(), ServerFnError> {
-    let db = Database::get_instance("flashcards.db").map_err(|e| ServerFnError::new(e.to_string()))?;
-    let db = db.lock().unwrap();
+    let db = Database::get_instance().unwrap().lock().unwrap();
 
     let mut card = Flashcard::new(question, answer);
     card.id = id;
