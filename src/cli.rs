@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let media_dir = env::current_dir()?.join(DB_DIR).join("media");
 
-    while let Some(card) = db.next()? {
+    for card in db.cards_to_review()? {
         println!("Q: {}", card.question);
         if let Some(img) = card.img {
             println!("   file://{}", media_dir.join(img).to_str().unwrap());
