@@ -11,6 +11,7 @@ use crate::components::list_cards::ListCards;
 use crate::components::edit_card::EditCard;
 use crate::components::review_by_tag::ReviewByTag;
 use crate::components::view_card::ViewCard;
+use crate::languages::components;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -61,6 +62,11 @@ pub fn App() -> impl IntoView {
                                 "List cards"
                             </div>
                         </A>
+                        <A href="/learn-languages">
+                            <div class="block px-4 py-2 text-gray-700 hover:bg-gray-200 rounded">
+                                "Learn languages"
+                            </div>
+                        </A>
                     </div>
                 </nav>
                 <main class="flex-1 p-4">
@@ -72,6 +78,7 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/list-cards") view=ListCards />
                         <Route path=path!("/cards/edit/:id") view=EditCard />
                         <Route path=path!("/cards/:id") view=ViewCard />
+                        <Route path=path!("/learn-languages") view=components::Overview />
                     </Routes>
                 </main>
             </div>

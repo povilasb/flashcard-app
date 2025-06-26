@@ -228,7 +228,7 @@ impl Database {
     }
 }
 
-fn from_duckdb_timestamp(t: Value) -> DateTime<Utc> {
+pub fn from_duckdb_timestamp(t: Value) -> DateTime<Utc> {
     match t {
         Value::Timestamp(time_unit, value) => {
             DateTime::from_timestamp_micros(time_unit.to_micros(value)).unwrap().with_timezone(&Utc)

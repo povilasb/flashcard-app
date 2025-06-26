@@ -1,7 +1,10 @@
 #![cfg(feature = "ssr")]
-use duckdb::{params, Connection};
+use duckdb::{params, Connection, types::Value};
 use once_cell::sync::OnceCell;
 use std::sync::Mutex;
+
+use crate::db::from_duckdb_timestamp;
+use crate::languages::Word;
 
 static INIT_TABLES_SQL: &str = "
 CREATE TABLE IF NOT EXISTS words (
@@ -43,6 +46,18 @@ impl Database {
     pub fn add_word(&self, word: &str) -> Result<(), anyhow::Error> {
         self.conn.execute("INSERT INTO words (word) VALUES (?) ON CONFLICT DO NOTHING", params![word])?;
         Ok(())
+    }
+
+    pub fn all_words(&self) -> Result<Vec<Word>, anyhow::Error> {
+        let mut stmt = self.conn.prepare("SELECT word, translation, created_at FROM words")?;
+        let words = stmt.query_map(params![], |row| {
+            Ok(Word {
+                word: row.get(0)?,
+                translation: row.get(1)?,
+                created_at: from_duckdb_timestamp(row.get::<_, Value>(2)?),
+            })
+        })?;
+        Ok(words.collect::<Result<Vec<Word>, _>>()?)
     }
 
 }
