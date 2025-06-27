@@ -60,4 +60,9 @@ impl Database {
         Ok(words.collect::<Result<Vec<Word>, _>>()?)
     }
 
+    pub fn update_word_translation(&self, word: &str, translation: &str) -> Result<(), anyhow::Error> {
+        self.conn.execute("UPDATE words SET translation = ? WHERE word = ?", params![translation, word])?;
+        Ok(())
+    }
+
 }

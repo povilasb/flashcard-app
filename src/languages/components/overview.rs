@@ -15,6 +15,13 @@ async fn get_words() -> Result<Vec<Word>, ServerFnError> {
     Ok(words)
 }
 
+#[server(UpdateWordTranslation, "/api")]
+async fn update_word_translation(word: String, translation: String) -> Result<(), ServerFnError> {
+    let db = Database::get_instance(LANG).unwrap().lock().unwrap();
+    db.update_word_translation(&word, &translation).map_err(|e| ServerFnError::new(e.to_string()))?;
+    Ok(())
+}
+
 #[component]
 pub fn Overview() -> impl IntoView {
     let (words, set_words) = signal(Vec::new());
@@ -59,10 +66,19 @@ pub fn Overview() -> impl IntoView {
                         {move || words.get()
                             .into_iter()
                             .map(|word| {
+                                let word_text = word.word.clone();
                                 view! {
                                     <tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-2 border">{word.word}</td>
-                                        <td class="px-4 py-2 border">{word.translation}</td>
+                                        <td class="px-4 py-2 border">{word_text}</td>
+                                        <td class="px-4 py-2 border">
+                                            <input type="text" value=word.translation.unwrap_or_default() on:change=move |ev| {
+                                                let value = event_target_value(&ev);
+                                                let word_text = word.word.clone();
+                                                spawn_local(async move {
+                                                    update_word_translation(word_text, value).await;
+                                                });
+                                            } />
+                                        </td>
                                         <td class="px-4 py-2 border">{word.created_at.to_string()}</td>
                                     </tr>
                                 }
