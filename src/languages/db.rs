@@ -65,4 +65,9 @@ impl Database {
         Ok(())
     }
 
+    pub fn delete_word(&self, word: &str) -> Result<(), anyhow::Error> {
+        self.conn.execute("DELETE FROM words WHERE word = ?", params![word])?;
+        Ok(())
+    }
+
 }
