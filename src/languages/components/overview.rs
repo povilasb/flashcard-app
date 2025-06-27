@@ -75,7 +75,9 @@ pub fn Overview() -> impl IntoView {
                                                 let value = event_target_value(&ev);
                                                 let word_text = word.word.clone();
                                                 spawn_local(async move {
-                                                    update_word_translation(word_text, value).await;
+                                                    if let Err(e) = update_word_translation(word_text, value).await {
+                                                        set_error.set(Some(format!("Failed to update word translation:\n {}", e)));
+                                                    }
                                                 });
                                             } />
                                         </td>
