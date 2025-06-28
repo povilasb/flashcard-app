@@ -38,12 +38,22 @@ pub fn GenerateSentence() -> impl IntoView {
         </button>
 
         <div class="mt-4">
-            <div class="font-bold">New Sentence</div>
-            <p>{move || new_sentence.get().map(|s| s.text)}</p>
-            <div class="font-bold">New Word</div>
-            <p>{move || new_sentence.get().map(|s| s.new_word)}</p>
-            <div class="font-bold">Translation</div>
-            <p>{move || new_sentence.get().map(|s| s.translation)}</p>
+            <table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">New Sentence</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">New Word</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">Translation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-gray-900 border-b border-gray-200">{move || new_sentence.get().map(|s| s.text)}</td>
+                        <td class="px-4 py-3 text-gray-900 border-b border-gray-200">{move || new_sentence.get().map(|s| s.new_word)}</td>
+                        <td class="px-4 py-3 text-gray-900 border-b border-gray-200">{move || new_sentence.get().map(|s| s.translation)}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     }
 }
