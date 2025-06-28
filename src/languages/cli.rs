@@ -34,10 +34,7 @@ Place each word on a new line.
 async fn main() -> Result<(), anyhow::Error> {
     // Load environment variables from .env file
     dotenv().ok();
-
-    //populate_words_db("spanish").await?;
-    let sentence = gen_new_sentence("spanish").await?;
-    println!("{:?}", sentence);
+    populate_words_db("spanish").await?;
     Ok(())
 }
 
