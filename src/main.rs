@@ -10,6 +10,10 @@ async fn main() {
     use axum::http::HeaderValue;
     use axum::response::Response;
     use tower_http::services::ServeDir;
+    use dotenv::dotenv;
+
+    // Load environment variables from .env file
+    dotenv().ok();
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;

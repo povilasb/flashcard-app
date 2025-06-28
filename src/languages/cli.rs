@@ -6,7 +6,7 @@ use rig::{completion::Prompt, providers::anthropic, client::ProviderClient};
 
 use flashcard_app::languages::Database;
 use flashcard_app::db::Database as FlashcardsDb;
-use anyhow;
+use anyhow::{self, Ok};
 use dotenv::dotenv;
 
 
@@ -29,53 +29,19 @@ cocina
 Place each word on a new line.
 ";
 
-static GEN_NEW_WORDS_PROMPT: &str = "
-You are bilingual {lang} and English speaker.
-Help me to gradually learn the {lang} language. Here is the words I already know in {lang}:
-
-<dictionary>
-{dict}
-</dictionarty>
-
-Generate a sentence that uses the words from my dictionary but introduces one new word. Keep the sentence short. 
-Output in this format:
-
-<new_sentence>
-...
-</new_sentence>
-<new_word>
-manana
-</new_word>
-<translation>
-tomorrow
-</translation>
-
-Use only ASCII characters.
-Don't start with 'Hola'.
-";
-
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     // Load environment variables from .env file
     dotenv().ok();
+
     //populate_words_db("spanish").await?;
-    let sentence = gen_new_words("spanish").await?;
-    println!("{}", sentence);
+    let sentence = gen_new_sentence("spanish").await?;
+    println!("{:?}", sentence);
     Ok(())
 }
 
-async fn gen_new_words(lang: &str) -> Result<String, anyhow::Error> {
-    let words_db = Database::get_instance(lang)?.lock().unwrap();
-    let words = words_db.all_words()?;
-    let prompt = GEN_NEW_WORDS_PROMPT.replace("{lang}", lang)
-        .replace("{dict}", &words.iter().map(|word| format!("{}", word.word)).collect::<Vec<String>>().join("\n"));
 
-    let anthropic = anthropic::Client::from_env();
-    let agent = anthropic.agent(anthropic::CLAUDE_3_7_SONNET).max_tokens(1000).build();
-    let response = agent.prompt(&prompt).await?;
-    Ok(response)
-}
 
 // From flashcards...
 async fn populate_words_db(lang: &str) -> Result<(), anyhow::Error> {
@@ -134,6 +100,7 @@ fn llm_resp_parse_words(response: &str) -> Vec<String> {
     // Return empty vector if tags are not found
     Vec::new()
 }
+
 
 #[cfg(test)]
 mod tests {
