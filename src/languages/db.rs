@@ -43,8 +43,8 @@ impl Database {
     }
 
     // Idempotent.
-    pub fn add_word(&self, word: &str) -> Result<(), anyhow::Error> {
-        self.conn.execute("INSERT INTO words (word) VALUES (?) ON CONFLICT DO NOTHING", params![word])?;
+    pub fn add_word(&self, word: &str, translation: &str) -> Result<(), anyhow::Error> {
+        self.conn.execute("INSERT INTO words (word, translation) VALUES (?, ?) ON CONFLICT DO NOTHING", params![word, translation])?;
         Ok(())
     }
 

@@ -55,7 +55,7 @@ async fn populate_words_db(lang: &str) -> Result<(), anyhow::Error> {
 
     let words_db = Database::get_instance(lang)?.lock().unwrap();
     for word in words {
-        words_db.add_word(&word)?;
+        words_db.add_word(&word, "")?;
     }
 
     Ok(())

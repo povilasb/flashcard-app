@@ -1,4 +1,3 @@
-
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
@@ -30,6 +29,13 @@ async fn delete_word(word: String) -> Result<(), ServerFnError> {
     Ok(())
 }
 
+#[server(AddWord, "/api")]
+async fn add_word(word: String, translation: String) -> Result<(), ServerFnError> {
+    let db = Database::get_instance(LANG).unwrap().lock().unwrap();
+    db.add_word(&word, &translation).map_err(|e| ServerFnError::new(e.to_string()))?;
+    Ok(())
+}
+
 #[component]
 pub fn Vocabulary() -> impl IntoView {
     let (words, set_words) = signal(Vec::new());
@@ -49,10 +55,56 @@ pub fn Vocabulary() -> impl IntoView {
         });
     });
 
+    let submit_word_form = ServerAction::<AddWord>::new();
+
+    // Handle form submission result
+    Effect::new(move |_| {
+        if let Some(result) = submit_word_form.value().get() {
+            match result {
+                Ok(_) => {
+                    // Refresh the words list after successful addition
+                    spawn_local(async move {
+                        match get_words().await {
+                            Ok(updated_words) => {
+                                set_words.set(updated_words);
+                            }
+                            Err(e) => {
+                                set_error.set(Some(format!("Failed to refresh words after addition:\n {}", e)));
+                            }
+                        }
+                    });
+                }
+                Err(e) => {
+                    set_error.set(Some(format!("Failed to add word:\n {}", e)));
+                }
+            }
+        }
+    });
+
     view! {
         <div class="text-sm text-gray-500">
             "Total: " { move || words.get().len() }
         </div>
+
+        <ActionForm action=submit_word_form >
+            <input
+                name="word"
+                type="text"
+                placeholder="Word"
+                class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+                name="translation"
+                type="text"
+                placeholder="Translation" 
+                class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button type="submit" class="bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-800 p-2 rounded" >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </button>
+        </ActionForm>
 
         <div class="overflow-x-auto">
             <table class="min-w-full bg-white border border-gray-300">
