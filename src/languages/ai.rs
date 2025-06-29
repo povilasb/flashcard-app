@@ -51,6 +51,7 @@ cocina
 </words>
 
 Place each word on a new line.
+Use only lowercase letters.
 ";
 
 
