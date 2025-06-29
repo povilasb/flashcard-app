@@ -107,28 +107,8 @@ fn get_all_sentences(lang: &str) -> Result<String, anyhow::Error> {
 // Returns:
 // ["gustaria", "cocina"]
 fn llm_resp_parse_words(response: &str) -> Vec<String> {
-    let start_tag = "<words>";
-    let end_tag = "</words>";
-    
-    if let Some(start_idx) = response.find(start_tag) {
-        if let Some(end_idx) = response.find(end_tag) {
-            let start_content = start_idx + start_tag.len();
-            let words_content = &response[start_content..end_idx];
-            
-            // Split by newlines and filter out empty lines
-            let words = words_content
-                .split('\n')
-                .map(|word| word.trim())
-                .filter(|word| !word.is_empty())
-                .map(|word| word.to_string())
-                .collect();
-            
-            return words;
-        }
-    }
-    
-    // Return empty vector if tags are not found
-    Vec::new()
+    let words = parse_xml_tag(response, "words").unwrap_or_default();
+    words.split('\n').map(|word| word.trim()).filter(|word| !word.is_empty()).map(|word| word.to_string()).collect()
 }
 
 // Minimal XML parser for non-perfect LLM output.
