@@ -4,7 +4,7 @@ use once_cell::sync::OnceCell;
 use std::sync::Mutex;
 
 use crate::db::from_duckdb_timestamp;
-use crate::languages::Word;
+use crate::languages::model::Word;
 
 static INIT_TABLES_SQL: &str = "
 CREATE TABLE IF NOT EXISTS words (

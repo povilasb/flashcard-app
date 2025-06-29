@@ -4,7 +4,7 @@ use rig::client::CompletionClient;
 use rig::{completion::Prompt, providers::anthropic, client::ProviderClient};
 
 use super::db::Database;
-use super::NewSentence;
+use super::model::NewSentence;
 use crate::db::Database as FlashcardsDb;
 
 static GEN_NEW_WORDS_PROMPT: &str = "

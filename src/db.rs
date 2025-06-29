@@ -6,10 +6,11 @@ use std::error::Error;
 use anyhow::Result;
 use once_cell::sync::OnceCell;
 use std::sync::Mutex;
-use crate::model::{Flashcard, ReviewHistory};
 use duckdb::{params, Connection};
 use duckdb::types::Value;
 use chrono::{DateTime, Utc};
+
+use crate::model::{Flashcard, ReviewHistory};
 
 /// NOTES:
 /// * duckdb-rs doesn't support arrays, so tags are stored in a separate table.

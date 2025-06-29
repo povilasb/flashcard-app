@@ -3,7 +3,7 @@ use leptos::task::spawn_local;
 
 #[cfg(feature = "ssr")]
 use crate::languages::{db::Database, ai::populate_words_db};
-use crate::languages::Word;
+use crate::languages::model::Word;
 use crate::components::error_notification::ErrorNotification;
 
 static LANG: &str = "spanish";

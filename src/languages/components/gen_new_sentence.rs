@@ -3,7 +3,7 @@ use leptos::task::spawn_local;
 
 #[cfg(feature = "ssr")]
 use crate::languages::ai::gen_new_sentence;
-use crate::languages::NewSentence;
+use crate::languages::model::NewSentence;
 
 static LANG: &str = "spanish";
 

@@ -4,6 +4,8 @@
 #![cfg(feature = "ssr")]
 
 mod ai;
+mod db;
+mod model;
  
 use dotenv::dotenv;
 use ai::populate_words_db;
