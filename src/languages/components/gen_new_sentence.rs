@@ -9,8 +9,7 @@ static LANG: &str = "spanish";
 
 #[server(GenerateSentence, "/api")]
 async fn generate_sentence() -> Result<NewSentence, ServerFnError> {
-    let sentence = gen_new_sentence(LANG).await.map_err(|e| ServerFnError::new(e.to_string()))?;
-    Ok(sentence)
+    gen_new_sentence(LANG).await.map_err(|e| ServerFnError::new(e.to_string()))
 }
 
 /// Using LLMs, generate a new sentence with a new word and its translation for iterative language learning.
@@ -54,6 +53,17 @@ pub fn GenerateSentence() -> impl IntoView {
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <div class="mt-4">
+            <form action="/add-card"> 
+                <input type="hidden" name="answer" value={move || new_sentence.get().map(|s| s.text)} />
+                <input type="hidden" name="tag" value=LANG />
+                <input type="hidden" name="source" value="learning-languages app" />
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer" >
+                    Create flashcard
+                </button>
+            </form>
         </div>
     }
 }
