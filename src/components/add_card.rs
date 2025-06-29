@@ -1,6 +1,8 @@
 use leptos::*;
 use leptos::prelude::*;
+use leptos_router::{hooks::use_query, params::Params};
 use gloo_timers::callback::Timeout;
+
 #[cfg(feature = "ssr")]
 use crate::db::Database;
 use crate::model::Flashcard;
@@ -118,8 +120,27 @@ pub fn FlashcardForm(
     }
 }
 
+#[derive(Params, PartialEq, Clone)]
+struct AddCardParams {
+    question: Option<String>,
+    answer: Option<String>,
+    source: Option<String>,
+    tag: Option<String>,
+}
+
 #[component]
 pub fn AddCard() -> impl IntoView {
+    let params = use_query::<AddCardParams>();
+    let question = params.get().map(|p| p.question).unwrap_or_default().unwrap_or_default();
+    let answer = params.get().map(|p| p.answer).unwrap_or_default().unwrap_or_default();
+    let mut card = Flashcard::new(question, answer);
+    if let Some(source) = params.get().map(|p| p.source).unwrap_or_default() {
+        card.source = Some(source);
+    }
+    if let Some(tag) = params.get().map(|p| p.tag).unwrap_or_default() {
+        card.tags = vec![tag];
+    }
+
     let submit = ServerAction::<SubmitCard>::new();
     let form_ref = NodeRef::<leptos::html::Form>::new();
     let show_ack = RwSignal::new(false);
@@ -140,7 +161,7 @@ pub fn AddCard() -> impl IntoView {
             <div class="flex flex-col gap-4 w-full max-w-md bg-white p-8 rounded shadow">
                 <ActionForm action=submit node_ref=form_ref>
                     <h2 class="text-2xl font-bold mb-4">{"Add a new card"}</h2>
-                    <FlashcardForm card=Flashcard::new("".to_string(), "".to_string()) />
+                    <FlashcardForm card=card />
                     <button
                         class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition mt-4"
                         type="submit"
