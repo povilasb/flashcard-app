@@ -3,5 +3,5 @@
 
 mod model;
 mod db;
-mod ai;
+pub mod ai;
 pub mod components;

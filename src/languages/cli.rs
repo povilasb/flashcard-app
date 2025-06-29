@@ -3,12 +3,8 @@
  
 #![cfg(feature = "ssr")]
 
-mod ai;
-mod db;
-mod model;
- 
 use dotenv::dotenv;
-use ai::populate_words_db;
+use flashcard_app::languages::ai::populate_words_db;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
