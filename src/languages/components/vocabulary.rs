@@ -79,19 +79,7 @@ pub fn Vocabulary() -> impl IntoView {
     Effect::new(move |_| {
         if let Some(result) = submit_word_form.value().get() {
             match result {
-                Ok(_) => {
-                    // Refresh the words list after successful addition
-                    spawn_local(async move {
-                        match get_words().await {
-                            Ok(updated_words) => {
-                                set_words.set(updated_words);
-                            }
-                            Err(e) => {
-                                set_error.set(Some(format!("Failed to refresh words after addition:\n {}", e)));
-                            }
-                        }
-                    });
-                }
+                Ok(_) => refresh_words(set_words, set_error),
                 Err(e) => {
                     set_error.set(Some(format!("Failed to add word:\n {}", e)));
                 }
