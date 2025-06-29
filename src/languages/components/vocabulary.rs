@@ -127,7 +127,7 @@ pub fn Vocabulary() -> impl IntoView {
             <table class="min-w-full bg-white border border-gray-300">
                 <thead>
                     <tr class="bg-gray-100">
-                        <th class="px-4 py-2 border">Actions</th>
+                        <th class="px-4 py-2 border"></th>
                         <th class="px-4 py-2 border">"Word"</th>
                         <th class="px-4 py-2 border">"Translation"</th>
                         <th class="px-4 py-2 border">"Created at"</th>
