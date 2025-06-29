@@ -2,7 +2,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 #[cfg(feature = "ssr")]
-use crate::languages::Database;
+use crate::languages::{db::Database, ai::populate_words_db};
 use crate::languages::Word;
 use crate::components::error_notification::ErrorNotification;
 
@@ -34,6 +34,24 @@ async fn add_word(word: String, translation: String) -> Result<(), ServerFnError
     let db = Database::get_instance(LANG).unwrap().lock().unwrap();
     db.add_word(&word, &translation).map_err(|e| ServerFnError::new(e.to_string()))?;
     Ok(())
+}
+
+#[server(AddFromFlashcards, "/api")]
+async fn add_from_flashcards() -> Result<(), ServerFnError> {
+    populate_words_db(LANG).await.map_err(|e| ServerFnError::new(e.to_string()))
+}
+
+fn refresh_words(set_words: WriteSignal<Vec<Word>>, set_error: WriteSignal<Option<String>>) {
+    spawn_local(async move {
+        match get_words().await {
+            Ok(updated_words) => {
+                set_words.set(updated_words);
+            }
+            Err(e) => {
+                set_error.set(Some(format!("Failed to load cards:\n {}", e)));
+            }
+        }
+    });
 }
 
 #[component]
@@ -105,6 +123,17 @@ pub fn Vocabulary() -> impl IntoView {
                 </svg>
             </button>
         </ActionForm>
+
+        <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded" on:click=move |_| {
+            spawn_local(async move {
+                match add_from_flashcards().await {
+                    Ok(_) => refresh_words(set_words, set_error),
+                    Err(e) => {
+                        set_error.set(Some(format!("Failed to add from flashcards:\n {}", e)));
+                    }
+                }
+            });
+        }>Add from flashcards</button>
 
         <div class="overflow-x-auto">
             <table class="min-w-full bg-white border border-gray-300">

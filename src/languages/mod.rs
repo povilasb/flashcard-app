@@ -10,10 +10,6 @@ mod db;
 mod ai;
 pub mod components;
 
-#[cfg(feature = "ssr")]
-pub use db::Database;
-
-
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Word {
     pub word: String,
