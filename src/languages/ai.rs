@@ -13,7 +13,7 @@ Help me to gradually learn the {lang} language. Here is the words I already know
 
 <dictionary>
 {dict}
-</dictionarty>
+</dictionary>
 
 Generate a sentence that uses the words from my dictionary but introduces one new word. 
 This new word cannot be an article like 'el', 'la', 'los', 'las', 'un', 'una', etc.
