@@ -4,7 +4,6 @@ use leptos::task::spawn_local;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
 use crate::errors::AppError;
-use crate::components::markdown::Markdown;
 
 #[server(WriteStory, "/api")]
 async fn write_story() -> Result<String, AppError> {
@@ -31,8 +30,23 @@ pub fn WriteStory() -> impl IntoView {
             <div class="mt-4">
                 {move || story.get()
                     .unwrap_or_default()
-                    .split("\n").map(|line| line.to_string())
-                    .map(|line| view! { <p>{line}</p> })
+                    .split("\n")
+                    .map(|line| line.to_string())
+                    .map(|line| {
+                        view! {
+                            <p>
+                                {line.split_inclusive(" ")
+                                    .map(|word| word.to_string())
+                                    .map(|word| view! {
+                                        <span class="hover:bg-gray-100 cursor-pointer px-0.5 rounded">
+                                            {word}
+                                        </span>
+                                    })
+                                    .collect::<Vec<_>>()
+                                }
+                            </p>
+                        }
+                    })
                     .collect::<Vec<_>>()
                 }
             </div>
