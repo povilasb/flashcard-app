@@ -6,7 +6,7 @@ use std::error::Error;
 use anyhow::Result;
 use once_cell::sync::OnceCell;
 use std::sync::Mutex;
-use duckdb::{params, Connection};
+use duckdb::{params, Connection, Error as DuckdbError};
 use duckdb::types::Value;
 use chrono::{DateTime, Utc};
 
@@ -105,7 +105,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn all_cards(&self, tag: Option<String>) -> Result<Vec<Flashcard>, anyhow::Error> {
+    pub fn all_cards(&self, tag: Option<String>) -> Result<Vec<Flashcard>, DuckdbError> {
         let mut query = "SELECT f.*, group_concat(ft.tag) from flashcards f 
             join flashcard_tags ft on f.id = ft.flashcard_id".to_string();
         if let Some(tag) = tag {

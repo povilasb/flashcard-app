@@ -2,7 +2,9 @@
 
 use rig::client::CompletionClient;
 use rig::{completion::Prompt, providers::anthropic, client::ProviderClient};
+use duckdb::Error as DuckdbError;
 
+use crate::errors::AppError;
 use super::db::Database;
 use super::model::NewSentence;
 use crate::db::Database as FlashcardsDb;
@@ -74,7 +76,7 @@ pub async fn gen_new_sentence(lang: &str) -> Result<NewSentence, anyhow::Error> 
 }
 
 // From flashcards...
-pub async fn populate_words_db(lang: &str) -> Result<(), anyhow::Error> {
+pub async fn populate_words_db(lang: &str) -> Result<(), AppError> {
     let sentences = get_all_sentences(lang)?;
     let prompt = EXTRACT_WORDS_PROMPT.replace("{lang}", lang).replace("{sentences}", &sentences);
 
@@ -83,7 +85,7 @@ pub async fn populate_words_db(lang: &str) -> Result<(), anyhow::Error> {
     let response = agent.prompt(&prompt).await?;
     let words = llm_resp_parse_words(&response);
 
-    let words_db = Database::get_instance(lang)?.lock().unwrap();
+    let words_db = Database::get_instance(lang).unwrap().lock().unwrap();
     for word in words {
         words_db.add_word(&word, "")?;
     }
@@ -91,8 +93,8 @@ pub async fn populate_words_db(lang: &str) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-fn get_all_sentences(lang: &str) -> Result<String, anyhow::Error> {
-    let flashcards_db = FlashcardsDb::get_instance()?.lock().unwrap();
+fn get_all_sentences(lang: &str) -> Result<String, DuckdbError> {
+    let flashcards_db = FlashcardsDb::get_instance().unwrap().lock().unwrap();
     let cards = flashcards_db.all_cards(Some(lang.to_string()))?;
     Ok(cards.iter().map(|card| card.answer.clone()).collect::<Vec<String>>().join("\n"))
 }

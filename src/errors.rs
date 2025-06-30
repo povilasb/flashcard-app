@@ -5,11 +5,14 @@ use server_fn::codec::JsonEncoding;
 #[cfg(feature = "ssr")]
 use duckdb::Error as DuckdbError;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ssr")]
+use rig::completion::PromptError;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum AppError {
     DuckdbError(String),
     ServerFnError(ServerFnErrorErr),
+    LlmError(String),
 }
 
 impl fmt::Display for AppError {
@@ -17,6 +20,7 @@ impl fmt::Display for AppError {
         match self {
             AppError::DuckdbError(e) => write!(f, "{}", e),
             AppError::ServerFnError(e) => write!(f, "{}", e),
+            AppError::LlmError(e) => write!(f, "{}", e),
         }
     }
 }
@@ -25,6 +29,13 @@ impl fmt::Display for AppError {
 impl From<DuckdbError> for AppError {
     fn from(e: DuckdbError) -> Self {
         AppError::DuckdbError(e.to_string())
+    }
+}
+
+#[cfg(feature = "ssr")]
+impl From<PromptError> for AppError {
+    fn from(e: PromptError) -> Self {
+        AppError::LlmError(e.to_string())
     }
 }
 

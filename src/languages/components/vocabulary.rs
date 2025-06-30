@@ -40,8 +40,9 @@ async fn add_word(word: String, translation: String) -> Result<(), AppError> {
 }
 
 #[server(AddFromFlashcards, "/api")]
-async fn add_from_flashcards() -> Result<(), ServerFnError> {
-    populate_words_db(LANG).await.map_err(|e| ServerFnError::new(e.to_string()))
+async fn add_from_flashcards() -> Result<(), AppError> {
+    populate_words_db(LANG).await?;
+    Ok(())
 }
 
 fn refresh_words(set_words: WriteSignal<Vec<Word>>, set_error: WriteSignal<Option<String>>) {
