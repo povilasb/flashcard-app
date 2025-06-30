@@ -2,7 +2,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 #[cfg(feature = "ssr")]
-use crate::languages::ai::populate_words_db;
+use crate::languages::ai;
 use crate::languages::model::Word;
 use crate::components::error_notification::ErrorNotification;
 use crate::errors::AppError;
@@ -41,8 +41,7 @@ async fn add_word(word: String, translation: String) -> Result<(), AppError> {
 
 #[server(AddFromFlashcards, "/api")]
 async fn add_from_flashcards() -> Result<(), AppError> {
-    populate_words_db(LANG).await?;
-    Ok(())
+    ai::Agent::new(LANG).populate_words_db().await
 }
 
 fn refresh_words(set_words: WriteSignal<Vec<Word>>, set_error: WriteSignal<Option<String>>) {

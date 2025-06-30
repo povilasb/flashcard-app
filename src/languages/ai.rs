@@ -56,24 +56,55 @@ Place each word on a new line.
 Use only lowercase letters.
 ";
 
-
-pub async fn gen_new_sentence(lang: &str) -> Result<NewSentence, anyhow::Error> {
-    let words = {
-        let words_db = Database::get_instance(lang)?.lock().unwrap();
-        words_db.all_words()?
-    };
-    let prompt = GEN_NEW_WORDS_PROMPT.replace("{lang}", lang)
-        .replace("{dict}", &words.iter().map(|word| format!("{}", word.word)).collect::<Vec<String>>().join("\n"));
-
-    let anthropic = anthropic::Client::from_env();
-    let agent = anthropic.agent(anthropic::CLAUDE_3_7_SONNET).max_tokens(1000).build();
-    let response = agent.prompt(&prompt).await?;
-
-    let text = parse_xml_tag(&response, "new_sentence").unwrap();
-    let new_word = parse_xml_tag(&response, "new_word").unwrap();
-    let translation = parse_xml_tag(&response, "translation").unwrap();
-    Ok(NewSentence { text, new_word, translation })
+// AI agent that understands the language we are learning.
+pub struct Agent {
+    llm_client: anthropic::Client,
+    lang: String,
 }
+
+impl Agent {
+    /// Initialize an agent with anthropic API key set in the environment:
+    ///     ANTHROPIC_API_KEY=sk-ant-api03-...
+    pub fn new(lang: &str) -> Self {
+        Self { llm_client: anthropic::Client::from_env(), lang: lang.to_string() }
+    }
+
+    pub async fn gen_new_sentence(&self) -> Result<NewSentence, AppError> {
+        let words = {
+            let words_db = Database::get_instance(&self.lang).unwrap().lock().unwrap();
+            words_db.all_words()?
+        };
+        let prompt = GEN_NEW_WORDS_PROMPT
+            .replace("{lang}", &self.lang)
+            .replace("{dict}", &words.iter().map(|word| format!("{}", word.word)).collect::<Vec<String>>().join("\n"));
+
+        let agent = self.llm_client.agent(anthropic::CLAUDE_3_7_SONNET).max_tokens(1000).build();
+        let response = agent.prompt(&prompt).await?;
+
+        let text = parse_xml_tag(&response, "new_sentence").unwrap();
+        let new_word = parse_xml_tag(&response, "new_word").unwrap();
+        let translation = parse_xml_tag(&response, "translation").unwrap();
+        Ok(NewSentence { text, new_word, translation })
+    }
+
+    // From flashcards...
+    pub async fn populate_words_db(&self) -> Result<(), AppError> {
+        let sentences = get_all_sentences(&self.lang)?;
+        let prompt = EXTRACT_WORDS_PROMPT.replace("{lang}", &self.lang).replace("{sentences}", &sentences);
+
+        let agent = self.llm_client.agent(anthropic::CLAUDE_3_7_SONNET).max_tokens(1000).build();
+        let response = agent.prompt(&prompt).await?;
+        let words = llm_resp_parse_words(&response);
+
+        let words_db = Database::get_instance(&self.lang).unwrap().lock().unwrap();
+        for word in words {
+            words_db.add_word(&word, "")?;
+        }
+
+        Ok(())
+    }
+}
+
 
 // From flashcards...
 pub async fn populate_words_db(lang: &str) -> Result<(), AppError> {

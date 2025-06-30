@@ -2,14 +2,15 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 #[cfg(feature = "ssr")]
-use crate::languages::ai::gen_new_sentence;
+use crate::languages::ai;
 use crate::languages::model::NewSentence;
+use crate::errors::AppError;
 
 static LANG: &str = "spanish";
 
 #[server(GenerateSentence, "/api")]
-async fn generate_sentence() -> Result<NewSentence, ServerFnError> {
-    gen_new_sentence(LANG).await.map_err(|e| ServerFnError::new(e.to_string()))
+async fn generate_sentence() -> Result<NewSentence, AppError> {
+    ai::Agent::new(LANG).gen_new_sentence().await
 }
 
 /// Using LLMs, generate a new sentence with a new word and its translation for iterative language learning.
