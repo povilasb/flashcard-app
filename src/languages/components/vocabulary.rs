@@ -2,36 +2,43 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 #[cfg(feature = "ssr")]
-use crate::languages::{db::Database, ai::populate_words_db};
+use crate::languages::ai::populate_words_db;
 use crate::languages::model::Word;
 use crate::components::error_notification::ErrorNotification;
 
 static LANG: &str = "spanish";
 
+#[macro_export]
+macro_rules! words_db {
+    ($lang:expr) => {
+        crate::languages::db::Database::get_instance($lang).unwrap().lock().unwrap()
+    };
+} 
+
 #[server(GetWords, "/api")]
 async fn get_words() -> Result<Vec<Word>, ServerFnError> {
-    let db = Database::get_instance(LANG).unwrap().lock().unwrap();
+    let db = words_db!(LANG);
     let words = db.all_words().map_err(|e| ServerFnError::new(e.to_string()))?;
     Ok(words)
 }
 
 #[server(UpdateWordTranslation, "/api")]
 async fn update_word_translation(word: String, translation: String) -> Result<(), ServerFnError> {
-    let db = Database::get_instance(LANG).unwrap().lock().unwrap();
+    let db = words_db!(LANG);
     db.update_word_translation(&word, &translation).map_err(|e| ServerFnError::new(e.to_string()))?;
     Ok(())
 }
 
 #[server(DeleteWord, "/api")]
 async fn delete_word(word: String) -> Result<(), ServerFnError> {
-    let db = Database::get_instance(LANG).unwrap().lock().unwrap();
+    let db = words_db!(LANG);
     db.delete_word(&word).map_err(|e| ServerFnError::new(e.to_string()))?;
     Ok(())
 }
 
 #[server(AddWord, "/api")]
 async fn add_word(word: String, translation: String) -> Result<(), ServerFnError> {
-    let db = Database::get_instance(LANG).unwrap().lock().unwrap();
+    let db = words_db!(LANG);
     db.add_word(&word, &translation).map_err(|e| ServerFnError::new(e.to_string()))?;
     Ok(())
 }
