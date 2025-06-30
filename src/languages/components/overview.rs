@@ -23,5 +23,14 @@ pub fn Overview() -> impl IntoView {
                 Generate Sentence
             </a>
         </div>
+
+        <div class="flex flex-row gap-4 p-4">
+            <a 
+                class="w-full h-16 bg-gray-100 hover:bg-gray-200 text-black font-semibold text-lg rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
+                href="/learn-languages/write-story"
+            >
+                Write a story
+            </a>
+        </div>
     }
 }

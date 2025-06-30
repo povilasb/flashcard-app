@@ -11,7 +11,7 @@ use crate::components::list_cards::ListCards;
 use crate::components::edit_card::EditCard;
 use crate::components::review_by_tag::ReviewByTag;
 use crate::components::view_card::ViewCard;
-use crate::languages::components::{Overview, Vocabulary, GenerateSentence};
+use crate::languages::components::{Overview, Vocabulary, GenerateSentence, WriteStory};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -81,6 +81,7 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/learn-languages") view=Overview />
                         <Route path=path!("/learn-languages/vocabulary") view=Vocabulary />
                         <Route path=path!("/learn-languages/generate-sentence") view=GenerateSentence />
+                        <Route path=path!("/learn-languages/write-story") view=WriteStory />
                     </Routes>
                 </main>
             </div>

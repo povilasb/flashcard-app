@@ -56,6 +56,16 @@ Place each word on a new line.
 Use only lowercase letters.
 ";
 
+static GEN_STORY_PROMPT: &str = "
+Here is the words I already know in {lang}:
+
+<dictionary>
+{dict}
+</dictionary>
+
+Generate a short story using these words.
+";
+
 // AI agent that understands the language we are learning.
 pub struct Agent {
     llm_client: rig::agent::Agent<anthropic::completion::CompletionModel>,
@@ -100,6 +110,19 @@ impl Agent {
         }
 
         Ok(())
+    }
+
+    pub async fn gen_story(&self) -> Result<String, AppError> {
+        let words = {
+            let words_db = Database::get_instance(&self.lang).unwrap().lock().unwrap();
+            words_db.all_words()?
+        };
+        let prompt = GEN_STORY_PROMPT
+            .replace("{lang}", &self.lang)
+            .replace("{dict}", &words.iter().map(|word| format!("{}", word.word)).collect::<Vec<String>>().join("\n"));
+
+        let response = self.llm_client.prompt(&prompt).await?;
+        Ok(response)
     }
 }
 
