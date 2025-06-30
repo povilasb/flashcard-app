@@ -5,6 +5,7 @@ use leptos::task::spawn_local;
 use crate::languages::ai::populate_words_db;
 use crate::languages::model::Word;
 use crate::components::error_notification::ErrorNotification;
+use crate::errors::AppError;
 
 static LANG: &str = "spanish";
 
@@ -16,30 +17,25 @@ macro_rules! words_db {
 } 
 
 #[server(GetWords, "/api")]
-async fn get_words() -> Result<Vec<Word>, ServerFnError> {
-    let db = words_db!(LANG);
-    let words = db.all_words().map_err(|e| ServerFnError::new(e.to_string()))?;
-    Ok(words)
+async fn get_words() -> Result<Vec<Word>, AppError> {
+    Ok(words_db!(LANG).all_words()?)
 }
 
 #[server(UpdateWordTranslation, "/api")]
-async fn update_word_translation(word: String, translation: String) -> Result<(), ServerFnError> {
-    let db = words_db!(LANG);
-    db.update_word_translation(&word, &translation).map_err(|e| ServerFnError::new(e.to_string()))?;
+async fn update_word_translation(word: String, translation: String) -> Result<(), AppError> {
+    words_db!(LANG).update_word_translation(&word, &translation)?;
     Ok(())
 }
 
 #[server(DeleteWord, "/api")]
-async fn delete_word(word: String) -> Result<(), ServerFnError> {
-    let db = words_db!(LANG);
-    db.delete_word(&word).map_err(|e| ServerFnError::new(e.to_string()))?;
+async fn delete_word(word: String) -> Result<(), AppError> {
+    words_db!(LANG).delete_word(&word)?;
     Ok(())
 }
 
 #[server(AddWord, "/api")]
-async fn add_word(word: String, translation: String) -> Result<(), ServerFnError> {
-    let db = words_db!(LANG);
-    db.add_word(&word, &translation).map_err(|e| ServerFnError::new(e.to_string()))?;
+async fn add_word(word: String, translation: String) -> Result<(), AppError> {
+    words_db!(LANG).add_word(&word, &translation)?;
     Ok(())
 }
 

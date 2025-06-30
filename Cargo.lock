@@ -1197,6 +1197,7 @@ dependencies = [
  "once_cell",
  "rig-core",
  "serde",
+ "server_fn",
  "syntect",
  "tokio",
  "toml",

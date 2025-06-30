@@ -3,6 +3,7 @@ pub mod db;
 mod model;
 mod components;
 pub mod languages;
+mod errors;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
