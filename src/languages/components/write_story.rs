@@ -35,11 +35,18 @@ async fn translators_translate(text: String) -> Result<Option<String>, AppError>
 /// Writes a simple story using the words in my vocabulary.
 #[component]
 pub fn WriteStory() -> impl IntoView {
-    let (story, set_story) = signal(None);
     let (hovered_word, set_hovered_word) = signal(None::<String>);
     let (translation, set_translation) = signal(None::<String>);
     let (tooltip_pos, set_tooltip_pos) = signal((0.0, 0.0));
     let (selected_sentence, set_selected_sentence) = signal(None::<String>);
+    
+    let story = Resource::new(
+        || (),
+        |_| async move {
+            write_story().await.unwrap_or_default()
+        }
+    );
+    
     let selected_translation = Resource::new(
         move || selected_sentence.get(),
         move |sentence| async move {
@@ -50,15 +57,6 @@ pub fn WriteStory() -> impl IntoView {
             }
         }
     );
-
-    Effect::new(move || {
-        spawn_local(async move {
-            match write_story().await {
-                Ok(s) => set_story.set(Some(s)),
-                Err(e) => web_sys::console::error_1(&format!("Error writing story: {}", e).into()),
-            }
-        });
-    });
 
     // Fetch translation when word changes
     Effect::new(move |_| {
@@ -116,39 +114,41 @@ pub fn WriteStory() -> impl IntoView {
              
             <div class="mt-4 relative max-w-4xl mx-auto" on:mouseup=move |_| get_selected_text() on:mousedown=move |_| clear_selection()>
                 {move || story.get()
-                    .unwrap_or_default()
-                    .split("\n")
-                    .map(|line| line.to_string())
-                    .map(|line| {
-                        view! {
-                            <p>
-                                {line.split_inclusive(" ")
-                                    .map(|word| word.to_string())
-                                    .map(|word| {
-                                        let word2 = word.clone();
-                                        view! {
-                                            <span 
-                                                class="hover:bg-gray-100 cursor-pointer px-0.5 rounded relative select-text" 
-                                                on:mouseenter=move |ev| {
-                                                    // Get mouse position for tooltip
-                                                    let rect = event_target::<web_sys::Element>(&ev).get_bounding_client_rect();
-                                                    set_tooltip_pos.set((rect.left() + rect.width() / 2.0, rect.top() - (rect.height() * 1.5)));
-                                                    set_hovered_word.set(Some(word2.clone()));
+                    .map(|story_content| {
+                        story_content.split("\n")
+                            .map(|line| line.to_string())
+                            .map(|line| {
+                                view! {
+                                    <p>
+                                        {line.split_inclusive(" ")
+                                            .map(|word| word.to_string())
+                                            .map(|word| {
+                                                let word2 = word.clone();
+                                                view! {
+                                                    <span 
+                                                        class="hover:bg-gray-100 cursor-pointer px-0.5 rounded relative select-text" 
+                                                        on:mouseenter=move |ev| {
+                                                            // Get mouse position for tooltip
+                                                            let rect = event_target::<web_sys::Element>(&ev).get_bounding_client_rect();
+                                                            set_tooltip_pos.set((rect.left() + rect.width() / 2.0, rect.top() - (rect.height() * 1.5)));
+                                                            set_hovered_word.set(Some(word2.clone()));
+                                                        }
+                                                        on:mouseleave=move |_| {
+                                                            set_hovered_word.set(None);
+                                                        }
+                                                    >
+                                                        {word}
+                                                    </span>
                                                 }
-                                                on:mouseleave=move |_| {
-                                                    set_hovered_word.set(None);
-                                                }
-                                            >
-                                                {word}
-                                            </span>
+                                            })
+                                            .collect::<Vec<_>>()
                                         }
-                                    })
-                                    .collect::<Vec<_>>()
+                                    </p>
                                 }
-                            </p>
-                        }
+                            })
+                            .collect::<Vec<_>>()
                     })
-                    .collect::<Vec<_>>()
+                    .unwrap_or_default()
                 }
                 
                 // Translation tooltip
