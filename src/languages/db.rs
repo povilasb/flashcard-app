@@ -71,4 +71,17 @@ impl Database {
         Ok(())
     }
 
+    pub fn get_translation(&self, word: &str) -> Result<Option<String>, DuckdbError> {
+        let mut stmt = self.conn.prepare("SELECT translation FROM words WHERE word = ?")?;
+        let mut rows = stmt.query_map(params![word], |row| {
+            Ok(row.get::<_, String>(0)?)
+        })?;
+        
+        if let Some(Ok(translation)) = rows.next() {
+            Ok(Some(translation))
+        } else {
+            Ok(None)
+        }
+    }
+
 }
