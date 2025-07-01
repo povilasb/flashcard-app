@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
+use web_sys::window;
 
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
@@ -22,10 +23,10 @@ async fn get_translation(word: String) -> Result<Option<String>, AppError> {
 }
 
 #[server(Translators, "/api")]
-async fn translators_translate(word: String) -> Result<Option<String>, AppError> {
+async fn translators_translate(text: String) -> Result<Option<String>, AppError> {
     let google_trans = GoogleTranslator::default();
     let translation = google_trans
-        .translate_async(&word, "es", "en")
+        .translate_async(&text, "es", "en")
         .await
         .unwrap();
     Ok(Some(translation))
@@ -38,6 +39,17 @@ pub fn WriteStory() -> impl IntoView {
     let (hovered_word, set_hovered_word) = signal(None::<String>);
     let (translation, set_translation) = signal(None::<String>);
     let (tooltip_pos, set_tooltip_pos) = signal((0.0, 0.0));
+    let (selected_sentence, set_selected_sentence) = signal(None::<String>);
+    let selected_translation = Resource::new(
+        move || selected_sentence.get(),
+        move |sentence| async move {
+            if let Some(sentence) = sentence {
+                translators_translate(sentence).await.unwrap_or_default().unwrap_or_default()
+            } else {
+                "".to_string()
+            }
+        }
+    );
 
     Effect::new(move || {
         spawn_local(async move {
@@ -74,10 +86,35 @@ pub fn WriteStory() -> impl IntoView {
         }
     });
 
+    // Function to get selected text
+    let get_selected_text = move || {
+        if let Some(window) = window() {
+            if let Some(selection) = window.get_selection().ok().flatten() {
+                let selected_text = String::from(selection.to_string()).trim().to_string();
+                if !selected_text.is_empty() {
+                    set_selected_sentence.set(Some(selected_text.to_string()));
+                } else {
+                    set_selected_sentence.set(None);
+                }
+            }
+        }
+    };
+
+    // Function to clear selection
+    let clear_selection = move || {
+        if let Some(window) = window() {
+            if let Some(selection) = window.get_selection().ok().flatten() {
+                let _ = selection.remove_all_ranges();
+                set_selected_sentence.set(None);
+            }
+        }
+    };
+
     view! {
-        <div class="flex flex-col items-center h-screen">
-            <h1 class="text-2xl font-bold">Story of the day</h1>
-            <div class="mt-4 relative">
+        <div class="flex flex-col h-screen">
+            <h1 class="text-2xl font-bold text-center">Story of the day</h1>
+             
+            <div class="mt-4 relative max-w-4xl mx-auto" on:mouseup=move |_| get_selected_text() on:mousedown=move |_| clear_selection()>
                 {move || story.get()
                     .unwrap_or_default()
                     .split("\n")
@@ -91,7 +128,7 @@ pub fn WriteStory() -> impl IntoView {
                                         let word2 = word.clone();
                                         view! {
                                             <span 
-                                                class="hover:bg-gray-100 cursor-pointer px-0.5 rounded relative" 
+                                                class="hover:bg-gray-100 cursor-pointer px-0.5 rounded relative select-text" 
                                                 on:mouseenter=move |ev| {
                                                     // Get mouse position for tooltip
                                                     let rect = event_target::<web_sys::Element>(&ev).get_bounding_client_rect();
@@ -127,6 +164,47 @@ pub fn WriteStory() -> impl IntoView {
                     }
                 })}
             </div>
+
+            // Show selected sentence if any
+            {move || selected_sentence.get().map(|sentence| {
+                let sentence2 = sentence.clone();
+                view! {
+                    <div class="mt-2 p-2 bg-gray-100 rounded relative w-full">
+                        <button 
+                            class="absolute top-1 right-1 hover:text-blue-800 text-sm cursor-pointer"
+                            on:click=move |_| clear_selection()
+                        >
+                            X
+                        </button>
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="text-left p-2 font-semibold">Selected</th>
+                                    <th class="text-left p-2 font-semibold">Translation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="p-2">{sentence}</td>
+                                    <td class="p-2">{ move || selected_translation.get() }</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4">
+                        <form action="/add-card"> 
+                            <input type="hidden" name="question" value={move || selected_translation.get()} />
+                            <input type="hidden" name="answer" value={sentence2} />
+                            <input type="hidden" name="tag" value=LANG />
+                            <input type="hidden" name="source" value="learning-languages app" />
+                            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer" >
+                                Create flashcard
+                            </button>
+                        </form>
+                    </div>
+                }
+            })}
         </div>
     }
 }
