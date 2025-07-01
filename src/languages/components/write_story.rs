@@ -6,6 +6,8 @@ use crate::languages::ai;
 #[cfg(feature = "ssr")]
 use crate::languages::db::Database;
 use crate::errors::AppError;
+#[cfg(feature = "ssr")]
+use translators::{GoogleTranslator, Translator};
 
 static LANG: &str = "spanish";
 
@@ -17,6 +19,16 @@ async fn write_story() -> Result<String, AppError> {
 #[server(GetTranslation, "/api")]
 async fn get_translation(word: String) -> Result<Option<String>, AppError> {
     Ok(Database::get_instance(LANG).unwrap().lock().unwrap().get_translation(&word)?)
+}
+
+#[server(Translators, "/api")]
+async fn translators_translate(word: String) -> Result<Option<String>, AppError> {
+    let google_trans = GoogleTranslator::default();
+    let translation = google_trans
+        .translate_async(&word, "es", "en")
+        .await
+        .unwrap();
+    Ok(Some(translation))
 }
 
 /// Writes a simple story using the words in my vocabulary.
@@ -42,9 +54,17 @@ pub fn WriteStory() -> impl IntoView {
             let clean_word = word.trim_matches(|c: char| !c.is_alphabetic()).to_lowercase();
             if !clean_word.is_empty() {
                 spawn_local(async move {
-                    match get_translation(clean_word).await {
+                    // First try to get translation from database
+                    match get_translation(clean_word.clone()).await {
                         Ok(Some(trans)) => set_translation.set(Some(trans)),
-                        Ok(None) => set_translation.set(None),
+                        Ok(None) => {
+                            // If no translation in database, try translators
+                            match translators_translate(clean_word).await {
+                                Ok(Some(trans)) => set_translation.set(Some(trans)),
+                                Ok(None) => set_translation.set(None),
+                                Err(e) => web_sys::console::error_1(&format!("Error getting translators translation: {}", e).into()),
+                            }
+                        },
                         Err(e) => web_sys::console::error_1(&format!("Error getting translation: {}", e).into()),
                     }
                 });
