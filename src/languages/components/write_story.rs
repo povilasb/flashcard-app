@@ -40,13 +40,7 @@ pub fn WriteStory() -> impl IntoView {
     let (tooltip_pos, set_tooltip_pos) = signal((0.0, 0.0));
     let (selected_sentence, set_selected_sentence) = signal(None::<String>);
     
-    let story = Resource::new(
-        || (),
-        |_| async move {
-            write_story().await.unwrap_or_default()
-        }
-    );
-    
+    let story = OnceResource::new(async { write_story().await.unwrap_or_default() });
     let selected_translation = Resource::new(
         move || selected_sentence.get(),
         move |sentence| async move {
