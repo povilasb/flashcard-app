@@ -91,11 +91,9 @@ pub fn Vocabulary() -> impl IntoView {
     });
 
     view! {
-        <div class="text-sm text-gray-500">
-            "Total: " { move || words.get().len() }
-        </div>
+        <div class="text-sm text-gray-500">"Total: " {move || words.get().len()}</div>
 
-        <ActionForm action=submit_word_form >
+        <ActionForm action=submit_word_form>
             <input
                 name="word"
                 type="text"
@@ -105,26 +103,45 @@ pub fn Vocabulary() -> impl IntoView {
             <input
                 name="translation"
                 type="text"
-                placeholder="Translation" 
+                placeholder="Translation"
                 class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button type="submit" class="bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-800 p-2 rounded" >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            <button
+                type="submit"
+                class="bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-800 p-2 rounded"
+            >
+                <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 4v16m8-8H4"
+                    ></path>
                 </svg>
             </button>
         </ActionForm>
 
-        <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded" on:click=move |_| {
-            spawn_local(async move {
-                match add_from_flashcards().await {
-                    Ok(_) => refresh_words(set_words, set_error),
-                    Err(e) => {
-                        set_error.set(Some(format!("Failed to add from flashcards:\n {}", e)));
+        <button
+            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+            on:click=move |_| {
+                spawn_local(async move {
+                    match add_from_flashcards().await {
+                        Ok(_) => refresh_words(set_words, set_error),
+                        Err(e) => {
+                            set_error.set(Some(format!("Failed to add from flashcards:\n {}", e)));
+                        }
                     }
-                }
-            });
-        }>Add from flashcards</button>
+                });
+            }
+        >
+            Add from flashcards
+        </button>
 
         <div class="overflow-x-auto">
             <table class="min-w-full bg-white border border-gray-300">
@@ -137,64 +154,101 @@ pub fn Vocabulary() -> impl IntoView {
                     </tr>
                 </thead>
                 <tbody>
-                    {move || words.get()
-                        .into_iter()
-                        .map(|word| {
-                            let word_text = word.word.clone();
-                            let word_text2 = word.word.clone();
-                            view! {
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-2 border">
-                                        <svg class="w-5 h-5 cursor-pointer hover:text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" on:click=move |_| {
-                                            if let Some(window) = web_sys::window() {
-                                                if let Ok(confirmed) = window.confirm_with_message(&format!("Are you sure you want to delete '{}'?", word_text2)) {
-                                                    if confirmed {
-                                                        let word_to_delete = word_text2.clone();
-                                                        let set_words_clone = set_words.clone();
-                                                        let set_error_clone = set_error.clone();
-                                                        spawn_local(async move {
-                                                            match delete_word(word_to_delete).await {
-                                                                Ok(_) => {
-                                                                    // Refresh the words list
-                                                                    match get_words().await {
-                                                                        Ok(updated_words) => {
-                                                                            set_words_clone.set(updated_words);
+                    {move || {
+                        words
+                            .get()
+                            .into_iter()
+                            .map(|word| {
+                                let word_text = word.word.clone();
+                                let word_text2 = word.word.clone();
+                                view! {
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-2 border">
+                                            <svg
+                                                class="w-5 h-5 cursor-pointer hover:text-red-700"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                on:click=move |_| {
+                                                    if let Some(window) = web_sys::window() {
+                                                        if let Ok(confirmed) = window
+                                                            .confirm_with_message(
+                                                                &format!(
+                                                                    "Are you sure you want to delete '{}'?",
+                                                                    word_text2,
+                                                                ),
+                                                            )
+                                                        {
+                                                            if confirmed {
+                                                                let word_to_delete = word_text2.clone();
+                                                                let set_words_clone = set_words.clone();
+                                                                let set_error_clone = set_error.clone();
+                                                                spawn_local(async move {
+                                                                    match delete_word(word_to_delete).await {
+                                                                        Ok(_) => {
+                                                                            match get_words().await {
+                                                                                Ok(updated_words) => {
+                                                                                    set_words_clone.set(updated_words);
+                                                                                }
+                                                                                Err(e) => {
+                                                                                    set_error_clone
+                                                                                        .set(
+                                                                                            Some(
+                                                                                                format!("Failed to refresh words after deletion:\n {}", e),
+                                                                                            ),
+                                                                                        );
+                                                                                }
+                                                                            }
                                                                         }
                                                                         Err(e) => {
-                                                                            set_error_clone.set(Some(format!("Failed to refresh words after deletion:\n {}", e)));
+                                                                            set_error_clone
+                                                                                .set(Some(format!("Failed to delete word:\n {}", e)));
                                                                         }
                                                                     }
-                                                                }
-                                                                Err(e) => {
-                                                                    set_error_clone.set(Some(format!("Failed to delete word:\n {}", e)));
-                                                                }
+                                                                });
                                                             }
-                                                        });
+                                                        }
                                                     }
                                                 }
-                                            }
-                                        }>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                    </td>
-                                    <td class="px-4 py-2 border">{word_text}</td>
-                                    <td class="px-4 py-2 border">
-                                        <input type="text" value=word.translation.unwrap_or_default() on:change=move |ev| {
-                                            let value = event_target_value(&ev);
-                                            let word_text = word.word.clone();
-                                            spawn_local(async move {
-                                                if let Err(e) = update_word_translation(word_text, value).await {
-                                                    set_error.set(Some(format!("Failed to update word translation:\n {}", e)));
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                ></path>
+                                            </svg>
+                                        </td>
+                                        <td class="px-4 py-2 border">{word_text}</td>
+                                        <td class="px-4 py-2 border">
+                                            <input
+                                                type="text"
+                                                value=word.translation.unwrap_or_default()
+                                                on:change=move |ev| {
+                                                    let value = event_target_value(&ev);
+                                                    let word_text = word.word.clone();
+                                                    spawn_local(async move {
+                                                        if let Err(e) = update_word_translation(word_text, value)
+                                                            .await
+                                                        {
+                                                            set_error
+                                                                .set(
+                                                                    Some(format!("Failed to update word translation:\n {}", e)),
+                                                                );
+                                                        }
+                                                    });
                                                 }
-                                            });
-                                        } />
-                                    </td>
-                                    <td class="px-4 py-2 border">{word.created_at.to_string()}</td>
-                                </tr>
-                            }
-                        })
-                        .collect_view()
-                    }
+                                            />
+                                        </td>
+                                        <td class="px-4 py-2 border">
+                                            {word.created_at.to_string()}
+                                        </td>
+                                    </tr>
+                                }
+                            })
+                            .collect_view()
+                    }}
                 </tbody>
             </table>
         </div>

@@ -50,7 +50,7 @@ pub fn ViewCard() -> impl IntoView {
         >
             {move || {
                 let card = card.get().unwrap();
-                view! { <Flashcard card=card on_answer={Callback::new(move |_| {})} /> }
+                view! { <Flashcard card=card on_answer=Callback::new(move |_| {}) /> }
             }}
         </Show>
     }

@@ -49,7 +49,7 @@ pub fn ReviewByTag() -> impl IntoView {
         });
     });
 
-    view! { 
+    view! {
         <ReviewCards cards=cards />
         <ErrorNotification error=error />
     }

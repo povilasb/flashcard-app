@@ -25,12 +25,15 @@ pub fn Flashcard(
             <div class="bg-white border border-slate-200 rounded-lg p-6 mb-4 shadow text-left relative">
                 <div class="flex flex-col items-start gap-4 justify-start">
                     <p class="m-0 text-[1.1rem] leading-6 text-left">
-                        <Markdown text={card.question.clone()} />
+                        <Markdown text=card.question.clone() />
                     </p>
-                    <Show when=move || card.question_img.clone().is_some() fallback=move || view! {}>
+                    <Show
+                        when=move || card.question_img.clone().is_some()
+                        fallback=move || view! {}
+                    >
                         <div class="mt-4">
-                            <img 
-                                src={question_img_src.clone().unwrap_or_default()}
+                            <img
+                                src=question_img_src.clone().unwrap_or_default()
                                 alt="Question image"
                                 class="max-w-full h-auto rounded-md border border-slate-200"
                             />
@@ -43,11 +46,11 @@ pub fn Flashcard(
                 >
                     <p class="m-0 text-[1.1rem] leading-6 text-left">
                         <hr class="my-2 mb-4" />
-                        <Markdown text={card.answer.clone()} />
+                        <Markdown text=card.answer.clone() />
                         <Show when=move || card.img.clone().is_some() fallback=move || view! {}>
                             <div class="mt-4">
-                                <img 
-                                    src={img_src.clone().unwrap_or_default()}
+                                <img
+                                    src=img_src.clone().unwrap_or_default()
                                     alt="Flashcard image"
                                     class="max-w-full h-auto rounded-md border border-slate-200"
                                 />
@@ -60,7 +63,7 @@ pub fn Flashcard(
                         <div class="bg-gray-50 p-4 rounded-md">
                             <b>"Examples:"</b>
                             <br />
-                            <Markdown text={card.examples.clone().unwrap_or_default()} />
+                            <Markdown text=card.examples.clone().unwrap_or_default() />
                         </div>
                     </div>
                 </Show>

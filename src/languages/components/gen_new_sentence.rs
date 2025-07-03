@@ -24,16 +24,21 @@ pub fn GenerateSentence() -> impl IntoView {
                 Learn new words
             </h2>
         </div>
-        <button class="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer" on:click=move |_| {
-            spawn_local(async move {
-                match generate_sentence().await {
-                    Ok(sentence) => new_sentence.set(Some(sentence)),
-                    Err(e) => {
-                        web_sys::console::error_1(&format!("Error generating sentence: {}", e).into());
+        <button
+            class="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer"
+            on:click=move |_| {
+                spawn_local(async move {
+                    match generate_sentence().await {
+                        Ok(sentence) => new_sentence.set(Some(sentence)),
+                        Err(e) => {
+                            web_sys::console::error_1(
+                                &format!("Error generating sentence: {}", e).into(),
+                            );
+                        }
                     }
-                }
-            });
-        }>
+                });
+            }
+        >
             Generate Sentence
         </button>
 
@@ -41,27 +46,46 @@ pub fn GenerateSentence() -> impl IntoView {
             <table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden shadow-sm">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">New Sentence</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">New Word</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">Translation</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">
+                            New Sentence
+                        </th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">
+                            New Word
+                        </th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">
+                            Translation
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-gray-900 border-b border-gray-200">{move || new_sentence.get().map(|s| s.text)}</td>
-                        <td class="px-4 py-3 text-gray-900 border-b border-gray-200">{move || new_sentence.get().map(|s| s.new_word)}</td>
-                        <td class="px-4 py-3 text-gray-900 border-b border-gray-200">{move || new_sentence.get().map(|s| s.translation)}</td>
+                        <td class="px-4 py-3 text-gray-900 border-b border-gray-200">
+                            {move || new_sentence.get().map(|s| s.text)}
+                        </td>
+                        <td class="px-4 py-3 text-gray-900 border-b border-gray-200">
+                            {move || new_sentence.get().map(|s| s.new_word)}
+                        </td>
+                        <td class="px-4 py-3 text-gray-900 border-b border-gray-200">
+                            {move || new_sentence.get().map(|s| s.translation)}
+                        </td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
         <div class="mt-4">
-            <form action="/add-card"> 
-                <input type="hidden" name="answer" value={move || new_sentence.get().map(|s| s.text)} />
+            <form action="/add-card">
+                <input
+                    type="hidden"
+                    name="answer"
+                    value=move || new_sentence.get().map(|s| s.text)
+                />
                 <input type="hidden" name="tag" value=LANG />
                 <input type="hidden" name="source" value="learning-languages app" />
-                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer" >
+                <button
+                    type="submit"
+                    class="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer"
+                >
                     Create flashcard
                 </button>
             </form>

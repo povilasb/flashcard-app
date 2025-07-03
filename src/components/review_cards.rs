@@ -83,17 +83,17 @@ pub fn ReviewCards(
         <div class="review-cards">
             <progress
                 class="w-full h-2.5 rounded-full"
-                value={move || {
+                value=move || {
                     let total = cards.get().len();
-                    if total == 0 { return 0; }
+                    if total == 0 {
+                        return 0;
+                    }
                     current_index.get() + 1
-                }}
-                max={move || cards.get().len()}
+                }
+                max=move || cards.get().len()
             ></progress>
             <Show
-                when=move || {
-                    cards.get().get(current_index.get()).is_some()
-                }
+                when=move || { cards.get().get(current_index.get()).is_some() }
                 fallback=|| {
                     view! {
                         <div class="max-w-[600px] mx-auto my-8 p-4">

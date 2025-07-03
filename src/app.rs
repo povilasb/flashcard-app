@@ -80,7 +80,10 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/cards/:id") view=ViewCard />
                         <Route path=path!("/learn-languages") view=Overview />
                         <Route path=path!("/learn-languages/vocabulary") view=Vocabulary />
-                        <Route path=path!("/learn-languages/generate-sentence") view=GenerateSentence />
+                        <Route
+                            path=path!("/learn-languages/generate-sentence")
+                            view=GenerateSentence
+                        />
                         <Route path=path!("/learn-languages/write-story") view=WriteStory />
                     </Routes>
                 </main>

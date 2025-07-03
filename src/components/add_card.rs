@@ -57,7 +57,12 @@ pub fn FlashcardForm(
                         type="file"
                         accept="image/*"
                         on:input=move |ev| {
-                            if let Some(files) = ev.target().unwrap().unchecked_ref::<web_sys::HtmlInputElement>().files() {
+                            if let Some(files) = ev
+                                .target()
+                                .unwrap()
+                                .unchecked_ref::<web_sys::HtmlInputElement>()
+                                .files()
+                            {
                                 let file_name = files.get(0).unwrap().name();
                                 question_img_fname.get().unwrap().set_value(&file_name);
                             }
@@ -68,12 +73,7 @@ pub fn FlashcardForm(
             </label>
             <label class="flex flex-col gap-2">
                 <span>Answer:</span>
-                <textarea
-                    class="border rounded px-3 py-2"
-                    name="answer"
-                    rows=4
-                    cols=80
-                >
+                <textarea class="border rounded px-3 py-2" name="answer" rows=4 cols=80>
                     {card.answer}
                 </textarea>
                 <label class="flex flex-col gap-2 ml-4">
@@ -83,7 +83,12 @@ pub fn FlashcardForm(
                         type="file"
                         accept="image/*"
                         on:input=move |ev| {
-                            if let Some(files) = ev.target().unwrap().unchecked_ref::<web_sys::HtmlInputElement>().files() {
+                            if let Some(files) = ev
+                                .target()
+                                .unwrap()
+                                .unchecked_ref::<web_sys::HtmlInputElement>()
+                                .files()
+                            {
                                 let file_name = files.get(0).unwrap().name();
                                 answer_img_fname.get().unwrap().set_value(&file_name);
                             }

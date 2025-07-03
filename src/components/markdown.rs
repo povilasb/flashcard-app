@@ -12,9 +12,7 @@ use comrak::plugins::syntect::SyntectAdapter;
 pub fn Markdown(
     #[prop(into)] text: Signal<String>,
 ) -> impl IntoView {
-    view! {
-        <div inner_html=move || md_to_html(&text.get()) />
-    }
+    view! { <div inner_html=move || md_to_html(&text.get()) /> }
 }
 
 fn md_to_html(text: &str) -> String {

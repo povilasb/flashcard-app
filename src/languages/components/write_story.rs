@@ -105,100 +105,134 @@ pub fn WriteStory() -> impl IntoView {
     view! {
         <div class="flex flex-col h-screen">
             <h1 class="text-2xl font-bold text-center">Story of the day</h1>
-             
-            <div class="mt-4 relative max-w-4xl mx-auto" on:mouseup=move |_| get_selected_text() on:mousedown=move |_| clear_selection()>
-                {move || story.get()
-                    .map(|story_content| {
-                        story_content.split("\n")
-                            .map(|line| line.to_string())
-                            .map(|line| {
-                                view! {
-                                    <p>
-                                        {line.split_inclusive(" ")
-                                            .map(|word| word.to_string())
-                                            .map(|word| {
-                                                let word2 = word.clone();
-                                                view! {
-                                                    <span 
-                                                        class="hover:bg-gray-100 cursor-pointer px-0.5 rounded relative select-text" 
-                                                        on:mouseenter=move |ev| {
-                                                            // Get mouse position for tooltip
-                                                            let rect = event_target::<web_sys::Element>(&ev).get_bounding_client_rect();
-                                                            set_tooltip_pos.set((rect.left() + rect.width() / 2.0, rect.top() - (rect.height() * 1.5)));
-                                                            set_hovered_word.set(Some(word2.clone()));
-                                                        }
-                                                        on:mouseleave=move |_| {
-                                                            set_hovered_word.set(None);
-                                                        }
-                                                    >
-                                                        {word}
-                                                    </span>
-                                                }
-                                            })
-                                            .collect::<Vec<_>>()
-                                        }
-                                    </p>
-                                }
-                            })
-                            .collect::<Vec<_>>()
-                    })
-                    .unwrap_or_default()
-                }
-                
+
+            <div
+                class="mt-4 relative max-w-4xl mx-auto"
+                on:mouseup=move |_| get_selected_text()
+                on:mousedown=move |_| clear_selection()
+            >
+                {move || {
+                    story
+                        .get()
+                        .map(|story_content| {
+                            story_content
+                                .split("\n")
+                                .map(|line| line.to_string())
+                                .map(|line| {
+                                    view! {
+                                        <p>
+                                            {line
+                                                .split_inclusive(" ")
+                                                .map(|word| word.to_string())
+                                                .map(|word| {
+                                                    let word2 = word.clone();
+                                                    view! {
+                                                        <span
+                                                            class="hover:bg-gray-100 cursor-pointer px-0.5 rounded relative select-text"
+                                                            on:mouseenter=move |ev| {
+                                                                let rect = event_target::<web_sys::Element>(&ev)
+                                                                    .get_bounding_client_rect();
+                                                                set_tooltip_pos
+                                                                    .set((
+                                                                        rect.left() + rect.width() / 2.0,
+                                                                        rect.top() - (rect.height() * 1.5),
+                                                                    ));
+                                                                set_hovered_word.set(Some(word2.clone()));
+                                                            }
+                                                            on:mouseleave=move |_| {
+                                                                set_hovered_word.set(None);
+                                                            }
+                                                        >
+                                                            {word}
+                                                        </span>
+                                                    }
+                                                })
+                                                .collect::<Vec<_>>()}
+                                        </p>
+                                    }
+                                })
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default()
+                }}
+
                 // Translation tooltip
-                {move || translation.get().map(|trans| {
-                    let (x, y) = tooltip_pos.get();
-                    view! {
-                        <div 
-                            class="fixed bg-black text-white px-2 py-1 rounded text-sm z-50 pointer-events-none shadow-lg"
-                             style=format!("left: {}px; top: {}px; transform: translateX(-50%);", x, y)
-                        >
-                            {trans}
-                        </div>
-                    }
-                })}
+                {move || {
+                    translation
+                        .get()
+                        .map(|trans| {
+                            let (x, y) = tooltip_pos.get();
+                            view! {
+                                <div
+                                    class="fixed bg-black text-white px-2 py-1 rounded text-sm z-50 pointer-events-none shadow-lg"
+                                    style=format!(
+                                        "left: {}px; top: {}px; transform: translateX(-50%);",
+                                        x,
+                                        y,
+                                    )
+                                >
+                                    {trans}
+                                </div>
+                            }
+                        })
+                }}
             </div>
 
             // Show selected sentence if any
-            {move || selected_sentence.get().map(|sentence| {
-                let sentence2 = sentence.clone();
-                view! {
-                    <div class="mt-2 p-2 bg-gray-100 rounded relative w-full">
-                        <button 
-                            class="absolute top-1 right-1 hover:text-blue-800 text-sm cursor-pointer"
-                            on:click=move |_| clear_selection()
-                        >
-                            X
-                        </button>
-                        <table class="w-full border-collapse">
-                            <thead>
-                                <tr class="border-b">
-                                    <th class="text-left p-2 font-semibold">Selected</th>
-                                    <th class="text-left p-2 font-semibold">Translation</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="p-2">{sentence}</td>
-                                    <td class="p-2">{ move || selected_translation.get() }</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+            {move || {
+                selected_sentence
+                    .get()
+                    .map(|sentence| {
+                        let sentence2 = sentence.clone();
+                        view! {
+                            <div class="mt-2 p-2 bg-gray-100 rounded relative w-full">
+                                <button
+                                    class="absolute top-1 right-1 hover:text-blue-800 text-sm cursor-pointer"
+                                    on:click=move |_| clear_selection()
+                                >
+                                    X
+                                </button>
+                                <table class="w-full border-collapse">
+                                    <thead>
+                                        <tr class="border-b">
+                                            <th class="text-left p-2 font-semibold">Selected</th>
+                                            <th class="text-left p-2 font-semibold">Translation</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="p-2">{sentence}</td>
+                                            <td class="p-2">{move || selected_translation.get()}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                    <div class="mt-4">
-                        <form action="/add-card"> 
-                            <input type="hidden" name="question" value={move || selected_translation.get()} />
-                            <input type="hidden" name="answer" value={sentence2} />
-                            <input type="hidden" name="tag" value=LANG />
-                            <input type="hidden" name="source" value="learning-languages app" />
-                            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer" >
-                                Create flashcard
-                            </button>
-                        </form>
-                    </div>
-                }
-            })}
+                            <div class="mt-4">
+                                <form action="/add-card">
+                                    <input
+                                        type="hidden"
+                                        name="question"
+                                        value=move || selected_translation.get()
+                                    />
+                                    <input type="hidden" name="answer" value=sentence2 />
+                                    <input type="hidden" name="tag" value=LANG />
+                                    <input
+                                        type="hidden"
+                                        name="source"
+                                        value="learning-languages app"
+                                    />
+                                    <button
+                                        type="submit"
+                                        class="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer"
+                                    >
+                                        Create flashcard
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    })
+            }}
         </div>
     }
 }
