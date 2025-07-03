@@ -63,7 +63,7 @@ Here is the words I already know in {lang}:
 {dict}
 </dictionary>
 
-Generate a short story using these words.
+Generate a short story using these words. You don't need to use all the words.
 ";
 
 // AI agent that understands the language we are learning.
