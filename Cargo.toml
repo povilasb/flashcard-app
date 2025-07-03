@@ -32,6 +32,7 @@ rig-core = { version = "0.13.0", optional = true }
 dotenv = { version = "0.15", optional = true }
 server_fn = "0.8.2"
 translators = { version = "0.1", optional = true, features = ["tokio-async", "google"] }
+thaw = { git = "https://github.com/thaw-ui/thaw", branch = "thaw/v0.5" }
 
 [[bin]]
 name = "cli"
@@ -64,6 +65,7 @@ ssr = [
     "leptos/ssr",
     "leptos_meta/ssr",
     "leptos_router/ssr",
+    "thaw/ssr",
 ]
 
 # Defines a size-optimized profile for the WASM bundle in release mode

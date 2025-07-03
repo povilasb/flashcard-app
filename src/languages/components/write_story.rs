@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
+use thaw::Spinner;
 use web_sys::window;
 
 use crate::errors::AppError;
@@ -39,12 +40,34 @@ async fn translators_translate(text: String) -> Result<Option<String>, AppError>
 /// Writes a simple story using the words in my vocabulary.
 #[component]
 pub fn WriteStory() -> impl IntoView {
+    let story = Resource::new(
+        || (),
+        |_| async move { write_story().await.unwrap_or_default() },
+    );
+
+    view! {
+        <div class="flex flex-col h-screen">
+            <h1 class="text-2xl font-bold text-center">Story of the day</h1>
+
+            <Transition fallback=move || {
+                view! { <Spinner /> }
+            }>
+                {move || Suspend::new(async move {
+                    let story = story.await;
+                    view! { <Story story=story /> }
+                })}
+            </Transition>
+        </div>
+    }
+}
+
+/// Story component that displays the story content with word hover functionality
+#[component]
+fn Story(#[prop(into)] story: Signal<String>) -> impl IntoView {
     let (hovered_word, set_hovered_word) = signal(None::<String>);
     let (translation, set_translation) = signal(None::<String>);
     let (tooltip_pos, set_tooltip_pos) = signal((0.0, 0.0));
     let (selected_sentence, set_selected_sentence) = signal(None::<String>);
-
-    let story = OnceResource::new(async { write_story().await.unwrap_or_default() });
     let selected_translation = Resource::new(
         move || selected_sentence.get(),
         move |sentence| async move {
@@ -114,82 +137,73 @@ pub fn WriteStory() -> impl IntoView {
             }
         }
     };
-
     view! {
-        <div class="flex flex-col h-screen">
-            <h1 class="text-2xl font-bold text-center">Story of the day</h1>
+        <div
+            class="mt-4 relative max-w-4xl mx-auto"
+            on:mouseup=move |_| get_selected_text()
+            on:mousedown=move |_| clear_selection()
+        >
+            {move || {
+                let story_content = story.get();
+                story_content
+                    .split("\n")
+                    .map(|line| line.to_string())
+                    .map(|line| {
+                        view! {
+                            <p>
+                                {line
+                                    .split_inclusive(" ")
+                                    .map(|word| word.to_string())
+                                    .map(|word| {
+                                        let word2 = word.clone();
+                                        view! {
+                                            <span
+                                                class="hover:bg-gray-100 cursor-pointer px-0.5 rounded relative select-text"
+                                                on:mouseenter=move |ev| {
+                                                    let rect = event_target::<web_sys::Element>(&ev)
+                                                        .get_bounding_client_rect();
+                                                    set_tooltip_pos
+                                                        .set((
+                                                            rect.left() + rect.width() / 2.0,
+                                                            rect.top() - (rect.height() * 1.5),
+                                                        ));
+                                                    set_hovered_word.set(Some(word2.clone()));
+                                                }
+                                                on:mouseleave=move |_| {
+                                                    set_hovered_word.set(None);
+                                                }
+                                            >
+                                                {word}
+                                            </span>
+                                        }
+                                    })
+                                    .collect::<Vec<_>>()}
+                            </p>
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            }}
 
-            <div
-                class="mt-4 relative max-w-4xl mx-auto"
-                on:mouseup=move |_| get_selected_text()
-                on:mousedown=move |_| clear_selection()
-            >
-                {move || {
-                    story
-                        .get()
-                        .map(|story_content| {
-                            story_content
-                                .split("\n")
-                                .map(|line| line.to_string())
-                                .map(|line| {
-                                    view! {
-                                        <p>
-                                            {line
-                                                .split_inclusive(" ")
-                                                .map(|word| word.to_string())
-                                                .map(|word| {
-                                                    let word2 = word.clone();
-                                                    view! {
-                                                        <span
-                                                            class="hover:bg-gray-100 cursor-pointer px-0.5 rounded relative select-text"
-                                                            on:mouseenter=move |ev| {
-                                                                let rect = event_target::<web_sys::Element>(&ev)
-                                                                    .get_bounding_client_rect();
-                                                                set_tooltip_pos
-                                                                    .set((
-                                                                        rect.left() + rect.width() / 2.0,
-                                                                        rect.top() - (rect.height() * 1.5),
-                                                                    ));
-                                                                set_hovered_word.set(Some(word2.clone()));
-                                                            }
-                                                            on:mouseleave=move |_| {
-                                                                set_hovered_word.set(None);
-                                                            }
-                                                        >
-                                                            {word}
-                                                        </span>
-                                                    }
-                                                })
-                                                .collect::<Vec<_>>()}
-                                        </p>
-                                    }
-                                })
-                                .collect::<Vec<_>>()
-                        })
-                        .unwrap_or_default()
-                }}
-
-                // Translation tooltip
-                {move || {
-                    translation
-                        .get()
-                        .map(|trans| {
-                            let (x, y) = tooltip_pos.get();
-                            view! {
-                                <div
-                                    class="fixed bg-black text-white px-2 py-1 rounded text-sm z-50 pointer-events-none shadow-lg"
-                                    style=format!(
-                                        "left: {}px; top: {}px; transform: translateX(-50%);",
-                                        x,
-                                        y,
-                                    )
-                                >
-                                    {trans}
-                                </div>
-                            }
-                        })
-                }}
-            </div>
+            // Translation tooltip
+            {move || {
+                translation
+                    .get()
+                    .map(|trans| {
+                        let (x, y) = tooltip_pos.get();
+                        view! {
+                            <div
+                                class="fixed bg-black text-white px-2 py-1 rounded text-sm z-50 pointer-events-none shadow-lg"
+                                style=format!(
+                                    "left: {}px; top: {}px; transform: translateX(-50%);",
+                                    x,
+                                    y,
+                                )
+                            >
+                                {trans}
+                            </div>
+                        }
+                    })
+            }}
 
             // Show selected sentence if any
             {move || {
@@ -246,6 +260,7 @@ pub fn WriteStory() -> impl IntoView {
                         }
                     })
             }}
+
         </div>
     }
 }
