@@ -1,12 +1,12 @@
 use std::fmt;
 
-use leptos::prelude::*;
-use server_fn::codec::JsonEncoding;
 #[cfg(feature = "ssr")]
 use duckdb::Error as DuckdbError;
-use serde::{Deserialize, Serialize};
+use leptos::prelude::*;
 #[cfg(feature = "ssr")]
 use rig::completion::PromptError;
+use serde::{Deserialize, Serialize};
+use server_fn::codec::JsonEncoding;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum AppError {

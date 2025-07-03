@@ -2,11 +2,11 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use web_sys::window;
 
+use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
 #[cfg(feature = "ssr")]
 use crate::languages::db::Database;
-use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use translators::{GoogleTranslator, Translator};
 
@@ -19,7 +19,11 @@ async fn write_story() -> Result<String, AppError> {
 
 #[server(GetTranslation, "/api")]
 async fn get_translation(word: String) -> Result<Option<String>, AppError> {
-    Ok(Database::get_instance(LANG).unwrap().lock().unwrap().get_translation(&word)?)
+    Ok(Database::get_instance(LANG)
+        .unwrap()
+        .lock()
+        .unwrap()
+        .get_translation(&word)?)
 }
 
 #[server(Translators, "/api")]
@@ -39,23 +43,28 @@ pub fn WriteStory() -> impl IntoView {
     let (translation, set_translation) = signal(None::<String>);
     let (tooltip_pos, set_tooltip_pos) = signal((0.0, 0.0));
     let (selected_sentence, set_selected_sentence) = signal(None::<String>);
-    
+
     let story = OnceResource::new(async { write_story().await.unwrap_or_default() });
     let selected_translation = Resource::new(
         move || selected_sentence.get(),
         move |sentence| async move {
             if let Some(sentence) = sentence {
-                translators_translate(sentence).await.unwrap_or_default().unwrap_or_default()
+                translators_translate(sentence)
+                    .await
+                    .unwrap_or_default()
+                    .unwrap_or_default()
             } else {
                 "".to_string()
             }
-        }
+        },
     );
 
     // Fetch translation when word changes
     Effect::new(move |_| {
         if let Some(word) = hovered_word.get() {
-            let clean_word = word.trim_matches(|c: char| !c.is_alphabetic()).to_lowercase();
+            let clean_word = word
+                .trim_matches(|c: char| !c.is_alphabetic())
+                .to_lowercase();
             if !clean_word.is_empty() {
                 spawn_local(async move {
                     // First try to get translation from database
@@ -66,10 +75,14 @@ pub fn WriteStory() -> impl IntoView {
                             match translators_translate(clean_word).await {
                                 Ok(Some(trans)) => set_translation.set(Some(trans)),
                                 Ok(None) => set_translation.set(None),
-                                Err(e) => web_sys::console::error_1(&format!("Error getting translators translation: {}", e).into()),
+                                Err(e) => web_sys::console::error_1(
+                                    &format!("Error getting translators translation: {}", e).into(),
+                                ),
                             }
-                        },
-                        Err(e) => web_sys::console::error_1(&format!("Error getting translation: {}", e).into()),
+                        }
+                        Err(e) => web_sys::console::error_1(
+                            &format!("Error getting translation: {}", e).into(),
+                        ),
                     }
                 });
             }

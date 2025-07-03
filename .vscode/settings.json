@@ -10,7 +10,9 @@
     // you may want to tell rust-analyzer to enable the `ssr` feature by default
     //
     // you can also use `rust-analyzer.cargo.allFeatures` to enable all features
-    "rust-analyzer.cargo.features": ["ssr"],
+    "rust-analyzer.cargo.features": [
+        "ssr"
+    ],
     "tailwindCSS.includeLanguages": {
         "rust": "html",
         "*.rs": "html"
@@ -20,4 +22,8 @@
         "--stdin",
         "--rustfmt"
     ],
+    "editor.formatOnSave": true,
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    }
 }

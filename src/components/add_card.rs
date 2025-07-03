@@ -1,13 +1,12 @@
-use leptos::*;
-use leptos::prelude::*;
-use leptos_router::{hooks::use_query, params::Params};
 use gloo_timers::callback::Timeout;
+use leptos::prelude::*;
+use leptos::*;
+use leptos_router::{hooks::use_query, params::Params};
 
 #[cfg(feature = "ssr")]
 use crate::db::Database;
 use crate::model::Flashcard;
 use leptos::wasm_bindgen::JsCast;
-
 
 #[server(SubmitCard, "/api")]
 pub async fn submit_card(
@@ -28,14 +27,13 @@ pub async fn submit_card(
     card.img = answer_img_fname;
     card.question_img = question_img_fname;
 
-    db.add_card(&card).map_err(|e| ServerFnError::new(e.to_string()))
+    db.add_card(&card)
+        .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
 /// Reused to add or edit a card.
 #[component]
-pub fn FlashcardForm(
-    #[prop(into)] card: Flashcard,
-) -> impl IntoView {
+pub fn FlashcardForm(#[prop(into)] card: Flashcard) -> impl IntoView {
     let answer_img_fname = NodeRef::<html::Input>::new();
     let question_img_fname = NodeRef::<html::Input>::new();
 
@@ -136,8 +134,16 @@ struct AddCardParams {
 #[component]
 pub fn AddCard() -> impl IntoView {
     let params = use_query::<AddCardParams>();
-    let question = params.get().map(|p| p.question).unwrap_or_default().unwrap_or_default();
-    let answer = params.get().map(|p| p.answer).unwrap_or_default().unwrap_or_default();
+    let question = params
+        .get()
+        .map(|p| p.question)
+        .unwrap_or_default()
+        .unwrap_or_default();
+    let answer = params
+        .get()
+        .map(|p| p.answer)
+        .unwrap_or_default()
+        .unwrap_or_default();
     let mut card = Flashcard::new(question, answer);
     if let Some(source) = params.get().map(|p| p.source).unwrap_or_default() {
         card.source = Some(source);

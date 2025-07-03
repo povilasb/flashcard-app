@@ -1,7 +1,7 @@
 //! Core models for the flashcard app.
 
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Flashcard {

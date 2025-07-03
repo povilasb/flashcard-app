@@ -2,13 +2,13 @@
 
 #![cfg(feature = "ssr")]
 
-use std::error::Error;
 use anyhow::Result;
-use once_cell::sync::OnceCell;
-use std::sync::Mutex;
-use duckdb::{params, Connection, Error as DuckdbError};
-use duckdb::types::Value;
 use chrono::{DateTime, Utc};
+use duckdb::types::Value;
+use duckdb::{params, Connection, Error as DuckdbError};
+use once_cell::sync::OnceCell;
+use std::error::Error;
+use std::sync::Mutex;
 
 use crate::model::{Flashcard, ReviewHistory};
 
@@ -75,7 +75,7 @@ impl Database {
 
     pub fn add_card(&self, card: &Flashcard) -> Result<(), anyhow::Error> {
         self.conn.execute("BEGIN TRANSACTION", params![])?;
-        
+
         let mut stmt = self.conn.prepare(
             "INSERT INTO flashcards (question, answer, examples, source, img, question_img, last_reviewed, review_after_secs) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"
@@ -91,32 +91,31 @@ impl Database {
                 card.last_reviewed.to_rfc3339(),
                 card.review_after_secs,
             ],
-            |row| row.get(0)
+            |row| row.get(0),
         )?;
-        
+
         for tag in card.tags.iter() {
             self.conn.execute(
                 "INSERT INTO flashcard_tags (flashcard_id, tag) VALUES (?, ?)",
-                params![flashcard_id, tag]
+                params![flashcard_id, tag],
             )?;
         }
-        
+
         self.conn.execute("COMMIT", params![])?;
         Ok(())
     }
 
     pub fn all_cards(&self, tag: Option<String>) -> Result<Vec<Flashcard>, DuckdbError> {
         let mut query = "SELECT f.*, group_concat(ft.tag) from flashcards f 
-            join flashcard_tags ft on f.id = ft.flashcard_id".to_string();
+            join flashcard_tags ft on f.id = ft.flashcard_id"
+            .to_string();
         if let Some(tag) = tag {
             query += &format!(" WHERE ft.tag = '{}'", tag);
         }
         query += " GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs, f.question_img";
 
         let mut stmt = self.conn.prepare(&query)?;
-        let rows = stmt.query_map([], |row| {
-            self.flashcard_from_row(row)
-        })?;
+        let rows = stmt.query_map([], |row| self.flashcard_from_row(row))?;
         Ok(rows.collect::<Result<Vec<_>, _>>()?)
     }
 
@@ -126,9 +125,7 @@ impl Database {
             join flashcard_tags ft on f.id = ft.flashcard_id 
             WHERE last_reviewed + INTERVAL(review_after_secs) SECOND < CURRENT_TIMESTAMP
             GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs")?;
-        let rows = stmt.query_map([], |row| {
-            self.flashcard_from_row(row)
-        })?;
+        let rows = stmt.query_map([], |row| self.flashcard_from_row(row))?;
         Ok(rows.collect::<Result<Vec<_>, _>>()?)
     }
 
@@ -139,7 +136,7 @@ impl Database {
         self.conn.execute("COMMIT", params![])?;
         Ok(())
     }
-    
+
     pub fn fail(&self, card_id: i64) -> Result<(), Box<dyn Error>> {
         self.conn.execute("BEGIN TRANSACTION", params![])?;
         // Don't prompt to review immediately.
@@ -156,9 +153,7 @@ impl Database {
             WHERE f.id = ?
             GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs"
         )?;
-        let card = stmt.query_row([id], |row| {
-            self.flashcard_from_row(row)
-        })?;
+        let card = stmt.query_row([id], |row| self.flashcard_from_row(row))?;
         Ok(card)
     }
 
@@ -167,7 +162,7 @@ impl Database {
         // to insert new tags:
         //     Some("Constraint Error: Duplicate key \"flashcard_id: 1, tag: tag1\" violates primary key constraint.
         //self.conn.execute("BEGIN TRANSACTION", params![])?;
-        
+
         // Update the flashcard
         self.conn.execute(
             "UPDATE flashcards SET question = ?, answer = ?, examples = ?, source = ?, img = ?, question_img = ? WHERE id = ?",
@@ -181,21 +176,21 @@ impl Database {
                 card.id,
             ]
         )?;
-        
+
         // Delete existing tags
         self.conn.execute(
             "DELETE FROM flashcard_tags WHERE flashcard_id = ?",
-            params![card.id]
+            params![card.id],
         )?;
-        
+
         // Insert new tags
         for tag in card.tags.iter().as_ref() {
             self.conn.execute(
                 "INSERT INTO flashcard_tags (flashcard_id, tag) VALUES (?, ?)",
-                params![card.id, tag]
+                params![card.id, tag],
             )?;
         }
-        
+
         //self.conn.execute("COMMIT", params![])?;
         Ok(())
     }
@@ -224,7 +219,11 @@ impl Database {
             last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
             review_after_secs: row.get(7)?,
             question_img: row.get(8)?,
-            tags: row.get::<_, String>(9)?.split(",").map(|s| s.to_string()).collect(),
+            tags: row
+                .get::<_, String>(9)?
+                .split(",")
+                .map(|s| s.to_string())
+                .collect(),
         })
     }
 }
@@ -232,7 +231,9 @@ impl Database {
 pub fn from_duckdb_timestamp(t: Value) -> DateTime<Utc> {
     match t {
         Value::Timestamp(time_unit, value) => {
-            DateTime::from_timestamp_micros(time_unit.to_micros(value)).unwrap().with_timezone(&Utc)
+            DateTime::from_timestamp_micros(time_unit.to_micros(value))
+                .unwrap()
+                .with_timezone(&Utc)
         }
         _ => panic!("expected timestamp, got {:?}", t),
     }
@@ -268,7 +269,10 @@ mod tests {
         let review_history = db.review_history().unwrap();
         assert_eq!(review_history.len(), 1);
         assert_eq!(review_history[0].flashcard_id, 1);
-        assert_eq!(review_history[0].review_date.format("%Y-%m-%d").to_string(), Utc::now().format("%Y-%m-%d").to_string());
+        assert_eq!(
+            review_history[0].review_date.format("%Y-%m-%d").to_string(),
+            Utc::now().format("%Y-%m-%d").to_string()
+        );
         assert_eq!(review_history[0].remembered, true);
     }
 }

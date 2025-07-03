@@ -1,10 +1,10 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
+use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
 use crate::languages::model::NewSentence;
-use crate::errors::AppError;
 
 static LANG: &str = "spanish";
 

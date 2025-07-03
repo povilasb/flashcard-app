@@ -1,8 +1,8 @@
-use leptos::*;
-use leptos::prelude::*;
-use crate::model::FlashcardAnswer;
-use crate::model;
 use crate::components::markdown::Markdown;
+use crate::model;
+use crate::model::FlashcardAnswer;
+use leptos::prelude::*;
+use leptos::*;
 
 #[component]
 pub fn Flashcard(
@@ -162,4 +162,4 @@ pub fn Flashcard(
             </div>
         </div>
     }
-} 
+}

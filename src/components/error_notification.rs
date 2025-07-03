@@ -1,12 +1,10 @@
-use leptos::*;
-use leptos::prelude::*;
 use gloo_timers::callback::Timeout;
+use leptos::prelude::*;
+use leptos::*;
 use web_sys::console;
 
 #[component]
-pub fn ErrorNotification(
-    #[prop(into)] error: Signal<Option<String>>,
-) -> impl IntoView {
+pub fn ErrorNotification(#[prop(into)] error: Signal<Option<String>>) -> impl IntoView {
     let (show, set_show) = signal(false);
     let (error_message, set_error_message) = signal(String::new());
 
@@ -16,7 +14,7 @@ pub fn ErrorNotification(
             console::error_1(&err.clone().into());
             set_error_message.set(err);
             set_show.set(true);
-            
+
             // Auto-dismiss after 5 seconds
             Timeout::new(5000, move || set_show.set(false)).forget();
         }
@@ -58,4 +56,4 @@ pub fn ErrorNotification(
             </div>
         </Show>
     }
-} 
+}

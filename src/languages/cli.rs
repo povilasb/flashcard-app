@@ -1,6 +1,6 @@
 //! Usage:
 //! cargo run --bin=lang --features=ssr
- 
+
 #![cfg(feature = "ssr")]
 
 use dotenv::dotenv;

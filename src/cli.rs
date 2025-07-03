@@ -1,13 +1,13 @@
 //! Usage:
 //! cargo run --bin=cli --features=ssr
 
-mod model;
 mod db;
+mod model;
 
+use crate::db::Database;
 use std::env;
 use std::error::Error;
 use std::io;
-use crate::db::Database;
 
 static DB_DIR: &str = "db";
 

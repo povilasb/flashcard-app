@@ -1,13 +1,13 @@
 #![cfg(feature = "ssr")]
 
-use rig::client::CompletionClient;
-use rig::{completion::Prompt, providers::anthropic, client::ProviderClient};
 use duckdb::Error as DuckdbError;
+use rig::client::CompletionClient;
+use rig::{client::ProviderClient, completion::Prompt, providers::anthropic};
 
-use crate::errors::AppError;
 use super::db::Database;
 use super::model::NewSentence;
 use crate::db::Database as FlashcardsDb;
+use crate::errors::AppError;
 
 static GEN_NEW_WORDS_PROMPT: &str = "
 You are bilingual {lang} and English speaker.
@@ -76,7 +76,13 @@ impl Agent {
     /// Initialize an agent with anthropic API key set in the environment:
     ///     ANTHROPIC_API_KEY=sk-ant-api03-...
     pub fn new(lang: &str) -> Self {
-        Self { llm_client: anthropic::Client::from_env().agent(anthropic::CLAUDE_3_7_SONNET).max_tokens(1000).build(), lang: lang.to_string() }
+        Self {
+            llm_client: anthropic::Client::from_env()
+                .agent(anthropic::CLAUDE_3_7_SONNET)
+                .max_tokens(1000)
+                .build(),
+            lang: lang.to_string(),
+        }
     }
 
     pub async fn gen_new_sentence(&self) -> Result<NewSentence, AppError> {
@@ -84,22 +90,33 @@ impl Agent {
             let words_db = Database::get_instance(&self.lang).unwrap().lock().unwrap();
             words_db.all_words()?
         };
-        let prompt = GEN_NEW_WORDS_PROMPT
-            .replace("{lang}", &self.lang)
-            .replace("{dict}", &words.iter().map(|word| format!("{}", word.word)).collect::<Vec<String>>().join("\n"));
+        let prompt = GEN_NEW_WORDS_PROMPT.replace("{lang}", &self.lang).replace(
+            "{dict}",
+            &words
+                .iter()
+                .map(|word| format!("{}", word.word))
+                .collect::<Vec<String>>()
+                .join("\n"),
+        );
 
         let response = self.llm_client.prompt(prompt).await?;
 
         let text = parse_xml_tag(&response, "new_sentence").unwrap();
         let new_word = parse_xml_tag(&response, "new_word").unwrap();
         let translation = parse_xml_tag(&response, "translation").unwrap();
-        Ok(NewSentence { text, new_word, translation })
+        Ok(NewSentence {
+            text,
+            new_word,
+            translation,
+        })
     }
 
     // From flashcards...
     pub async fn populate_words_db(&self) -> Result<(), AppError> {
         let sentences = get_all_sentences(&self.lang)?;
-        let prompt = EXTRACT_WORDS_PROMPT.replace("{lang}", &self.lang).replace("{sentences}", &sentences);
+        let prompt = EXTRACT_WORDS_PROMPT
+            .replace("{lang}", &self.lang)
+            .replace("{sentences}", &sentences);
 
         let response = self.llm_client.prompt(&prompt).await?;
         let words = llm_resp_parse_words(&response);
@@ -117,23 +134,32 @@ impl Agent {
             let words_db = Database::get_instance(&self.lang).unwrap().lock().unwrap();
             words_db.all_words()?
         };
-        let prompt = GEN_STORY_PROMPT
-            .replace("{lang}", &self.lang)
-            .replace("{dict}", &words.iter().map(|word| format!("{}", word.word)).collect::<Vec<String>>().join("\n"));
+        let prompt = GEN_STORY_PROMPT.replace("{lang}", &self.lang).replace(
+            "{dict}",
+            &words
+                .iter()
+                .map(|word| format!("{}", word.word))
+                .collect::<Vec<String>>()
+                .join("\n"),
+        );
 
         let response = self.llm_client.prompt(&prompt).await?;
         Ok(response)
     }
 }
 
-
 // From flashcards...
 pub async fn populate_words_db(lang: &str) -> Result<(), AppError> {
     let sentences = get_all_sentences(lang)?;
-    let prompt = EXTRACT_WORDS_PROMPT.replace("{lang}", lang).replace("{sentences}", &sentences);
+    let prompt = EXTRACT_WORDS_PROMPT
+        .replace("{lang}", lang)
+        .replace("{sentences}", &sentences);
 
     let anthropic = anthropic::Client::from_env();
-    let agent = anthropic.agent(anthropic::CLAUDE_3_7_SONNET).max_tokens(1000).build();
+    let agent = anthropic
+        .agent(anthropic::CLAUDE_3_7_SONNET)
+        .max_tokens(1000)
+        .build();
     let response = agent.prompt(&prompt).await?;
     let words = llm_resp_parse_words(&response);
 
@@ -148,7 +174,11 @@ pub async fn populate_words_db(lang: &str) -> Result<(), AppError> {
 fn get_all_sentences(lang: &str) -> Result<String, DuckdbError> {
     let flashcards_db = FlashcardsDb::get_instance().unwrap().lock().unwrap();
     let cards = flashcards_db.all_cards(Some(lang.to_string()))?;
-    Ok(cards.iter().map(|card| card.answer.clone()).collect::<Vec<String>>().join("\n"))
+    Ok(cards
+        .iter()
+        .map(|card| card.answer.clone())
+        .collect::<Vec<String>>()
+        .join("\n"))
 }
 
 // Parse words from LLM response.
@@ -162,14 +192,19 @@ fn get_all_sentences(lang: &str) -> Result<String, DuckdbError> {
 // ["gustaria", "cocina"]
 fn llm_resp_parse_words(response: &str) -> Vec<String> {
     let words = parse_xml_tag(response, "words").unwrap_or_default();
-    words.split('\n').map(|word| word.trim()).filter(|word| !word.is_empty()).map(|word| word.to_string()).collect()
+    words
+        .split('\n')
+        .map(|word| word.trim())
+        .filter(|word| !word.is_empty())
+        .map(|word| word.to_string())
+        .collect()
 }
 
 // Minimal XML parser for non-perfect LLM output.
 fn parse_xml_tag(text: &str, tag: &str) -> Option<String> {
     let start_tag = format!("<{}>", tag);
     let end_tag = format!("</{}>", tag);
-    
+
     if let Some(start_idx) = text.find(&start_tag) {
         if let Some(end_idx) = text.find(&end_tag) {
             let start_content = start_idx + start_tag.len();

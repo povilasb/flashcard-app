@@ -1,16 +1,17 @@
-use leptos::*;
-use leptos::prelude::*;
-use leptos::task::spawn_local;
-use crate::model;
-#[cfg(feature = "ssr")]
-use crate::db::Database;
 use crate::components::error_notification::ErrorNotification;
 use crate::components::flashcard::Flashcard;
+#[cfg(feature = "ssr")]
+use crate::db::Database;
+use crate::model;
+use leptos::prelude::*;
+use leptos::task::spawn_local;
+use leptos::*;
 
 #[server(GetNextCards, "/api")]
 async fn get_cards() -> Result<Vec<model::Flashcard>, ServerFnError> {
     let db = Database::get_instance().unwrap().lock().unwrap();
-    db.cards_to_review().map_err(|e| ServerFnError::new(e.to_string()))
+    db.cards_to_review()
+        .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
 #[server(SubmitAnswer, "/api")]
@@ -18,13 +19,15 @@ pub async fn submit_answer(card_id: i64, remembered: bool) -> Result<(), ServerF
     let db = Database::get_instance().unwrap().lock().unwrap();
 
     if remembered {
-        db.ok(card_id).map_err(|e| ServerFnError::new(e.to_string()))?;
+        db.ok(card_id)
+            .map_err(|e| ServerFnError::new(e.to_string()))?;
     } else {
-        db.fail(card_id).map_err(|e| ServerFnError::new(e.to_string()))?;
+        db.fail(card_id)
+            .map_err(|e| ServerFnError::new(e.to_string()))?;
     }
 
     Ok(())
-} 
+}
 
 /// Review all cards that are due for review.
 #[component]
@@ -47,18 +50,15 @@ pub fn ReviewAllCards() -> impl IntoView {
         });
     });
 
-
     view! {
         <ReviewCards cards=cards />
         <ErrorNotification error=error />
     }
-} 
+}
 
 /// A reusable component to review a given list of cards.
 #[component]
-pub fn ReviewCards(
-    #[prop(into)] cards: Signal<Vec<model::Flashcard>>,
-) -> impl IntoView {
+pub fn ReviewCards(#[prop(into)] cards: Signal<Vec<model::Flashcard>>) -> impl IntoView {
     let current_index = RwSignal::new(0usize);
     let (error, set_error) = signal(None::<String>);
 

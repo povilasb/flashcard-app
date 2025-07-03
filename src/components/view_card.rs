@@ -1,11 +1,11 @@
-use leptos::*;
-use leptos::prelude::*;
-use leptos_router::params::Params;
-use leptos_router::hooks::use_params;
-use crate::components::flashcard::Flashcard;
-use leptos::task::spawn_local;
 use crate::components::edit_card::get_card;
+use crate::components::flashcard::Flashcard;
 use crate::model;
+use leptos::prelude::*;
+use leptos::task::spawn_local;
+use leptos::*;
+use leptos_router::hooks::use_params;
+use leptos_router::params::Params;
 
 #[derive(Params, PartialEq, Clone)]
 struct ViewCardParams {

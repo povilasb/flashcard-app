@@ -1,20 +1,23 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
+use crate::components::error_notification::ErrorNotification;
+use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
 use crate::languages::model::Word;
-use crate::components::error_notification::ErrorNotification;
-use crate::errors::AppError;
 
 static LANG: &str = "spanish";
 
 #[macro_export]
 macro_rules! words_db {
     ($lang:expr) => {
-        crate::languages::db::Database::get_instance($lang).unwrap().lock().unwrap()
+        crate::languages::db::Database::get_instance($lang)
+            .unwrap()
+            .lock()
+            .unwrap()
     };
-} 
+}
 
 #[server(GetWords, "/api")]
 async fn get_words() -> Result<Vec<Word>, AppError> {

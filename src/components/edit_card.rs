@@ -1,18 +1,19 @@
-use leptos::*;
-use leptos::prelude::*;
-use leptos_router::params::Params;
-use leptos_router::hooks::use_params;
-use crate::model::Flashcard;
 use crate::components::add_card::FlashcardForm;
 #[cfg(feature = "ssr")]
 use crate::db::Database;
+use crate::model::Flashcard;
 use gloo_timers::callback::Timeout;
+use leptos::prelude::*;
 use leptos::task::spawn_local;
+use leptos::*;
+use leptos_router::hooks::use_params;
+use leptos_router::params::Params;
 
 #[server(GetCard, "/api")]
 pub async fn get_card(id: i64) -> Result<Flashcard, ServerFnError> {
     let db = Database::get_instance().unwrap().lock().unwrap();
-    db.get_card(id).map_err(|e| ServerFnError::new(e.to_string()))
+    db.get_card(id)
+        .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
 #[server(UpdateCard, "/api")]
@@ -32,13 +33,15 @@ async fn update_card(
     card.examples = Some(examples);
     card.source = source;
     card.question_img = question_img_fname;
-    card.tags = tags.split(',')
+    card.tags = tags
+        .split(',')
         .map(|s| s.trim().to_string())
         .collect::<std::collections::HashSet<_>>()
         .into_iter()
         .collect();
 
-    db.update_card(&card).map_err(|e| ServerFnError::new(e.to_string()))
+    db.update_card(&card)
+        .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
 #[derive(Params, PartialEq, Clone)]
@@ -46,10 +49,8 @@ struct EditCardParams {
     id: Option<i64>,
 }
 
-
 #[component]
-pub fn EditCard(
-) -> impl IntoView {
+pub fn EditCard() -> impl IntoView {
     let (card, set_card) = signal(None::<Flashcard>);
     let submit = ServerAction::<UpdateCard>::new();
     let form_ref = NodeRef::<leptos::html::Form>::new();

@@ -1,6 +1,6 @@
 #![cfg(feature = "ssr")]
 
-use duckdb::{params, Connection, types::Value, Result, Error as DuckdbError};
+use duckdb::{params, types::Value, Connection, Error as DuckdbError, Result};
 use once_cell::sync::OnceCell;
 use std::sync::Mutex;
 
@@ -45,12 +45,17 @@ impl Database {
 
     // Idempotent.
     pub fn add_word(&self, word: &str, translation: &str) -> Result<(), DuckdbError> {
-        self.conn.execute("INSERT INTO words (word, translation) VALUES (?, ?) ON CONFLICT DO NOTHING", params![word, translation])?;
+        self.conn.execute(
+            "INSERT INTO words (word, translation) VALUES (?, ?) ON CONFLICT DO NOTHING",
+            params![word, translation],
+        )?;
         Ok(())
     }
 
     pub fn all_words(&self) -> Result<Vec<Word>, DuckdbError> {
-        let mut stmt = self.conn.prepare("SELECT word, translation, created_at FROM words")?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT word, translation, created_at FROM words")?;
         let words = stmt.query_map(params![], |row| {
             Ok(Word {
                 word: row.get(0)?,
@@ -61,27 +66,34 @@ impl Database {
         Ok(words.collect::<Result<Vec<Word>, _>>()?)
     }
 
-    pub fn update_word_translation(&self, word: &str, translation: &str) -> Result<(), DuckdbError> {
-        self.conn.execute("UPDATE words SET translation = ? WHERE word = ?", params![translation, word])?;
+    pub fn update_word_translation(
+        &self,
+        word: &str,
+        translation: &str,
+    ) -> Result<(), DuckdbError> {
+        self.conn.execute(
+            "UPDATE words SET translation = ? WHERE word = ?",
+            params![translation, word],
+        )?;
         Ok(())
     }
 
     pub fn delete_word(&self, word: &str) -> Result<(), DuckdbError> {
-        self.conn.execute("DELETE FROM words WHERE word = ?", params![word])?;
+        self.conn
+            .execute("DELETE FROM words WHERE word = ?", params![word])?;
         Ok(())
     }
 
     pub fn get_translation(&self, word: &str) -> Result<Option<String>, DuckdbError> {
-        let mut stmt = self.conn.prepare("SELECT translation FROM words WHERE word = ?")?;
-        let mut rows = stmt.query_map(params![word], |row| {
-            Ok(row.get::<_, String>(0)?)
-        })?;
-        
+        let mut stmt = self
+            .conn
+            .prepare("SELECT translation FROM words WHERE word = ?")?;
+        let mut rows = stmt.query_map(params![word], |row| Ok(row.get::<_, String>(0)?))?;
+
         if let Some(Ok(translation)) = rows.next() {
             Ok(Some(translation))
         } else {
             Ok(None)
         }
     }
-
 }

@@ -1,17 +1,16 @@
+use crate::components::add_card::AddCard;
+use crate::components::edit_card::EditCard;
+use crate::components::list_cards::ListCards;
+use crate::components::review_by_tag::ReviewByTag;
+use crate::components::review_cards::ReviewAllCards;
+use crate::components::view_card::ViewCard;
+use crate::languages::components::{GenerateSentence, Overview, Vocabulary, WriteStory};
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, A},
-    StaticSegment,
-    path,
+    path, StaticSegment,
 };
-use crate::components::add_card::AddCard;
-use crate::components::review_cards::ReviewAllCards;
-use crate::components::list_cards::ListCards;
-use crate::components::edit_card::EditCard;
-use crate::components::review_by_tag::ReviewByTag;
-use crate::components::view_card::ViewCard;
-use crate::languages::components::{Overview, Vocabulary, GenerateSentence, WriteStory};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
