@@ -201,63 +201,58 @@ fn Story(#[prop(into)] story: Signal<String>) -> impl IntoView {
                         }
                     })
             }}
-
-            // Show selected sentence if any
-            {move || {
-                selected_sentence
-                    .get()
-                    .map(|sentence| {
-                        let sentence2 = sentence.clone();
-                        view! {
-                            <div class="mt-2 p-2 bg-gray-100 rounded relative w-full">
-                                <button
-                                    class="absolute top-1 right-1 hover:text-blue-800 text-sm cursor-pointer"
-                                    on:click=move |_| clear_selection()
-                                >
-                                    X
-                                </button>
-                                <table class="w-full border-collapse">
-                                    <thead>
-                                        <tr class="border-b">
-                                            <th class="text-left p-2 font-semibold">Selected</th>
-                                            <th class="text-left p-2 font-semibold">Translation</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td class="p-2">{sentence}</td>
-                                            <td class="p-2">{move || selected_translation.get()}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div class="mt-4">
-                                <form action="/add-card">
-                                    <input
-                                        type="hidden"
-                                        name="question"
-                                        value=move || selected_translation.get()
-                                    />
-                                    <input type="hidden" name="answer" value=sentence2 />
-                                    <input type="hidden" name="tag" value=LANG />
-                                    <input
-                                        type="hidden"
-                                        name="source"
-                                        value="learning-languages app"
-                                    />
-                                    <button
-                                        type="submit"
-                                        class="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer"
-                                    >
-                                        Create flashcard
-                                    </button>
-                                </form>
-                            </div>
-                        }
-                    })
-            }}
-
         </div>
+
+        // Show selected sentence if any
+        {move || {
+            selected_sentence
+                .get()
+                .map(|sentence| {
+                    let sentence2 = sentence.clone();
+                    view! {
+                        <div class="mt-2 p-2 bg-gray-100 rounded relative w-full">
+                            <button
+                                class="absolute top-1 right-1 hover:text-blue-800 text-sm cursor-pointer"
+                                on:click=move |_| clear_selection()
+                            >
+                                X
+                            </button>
+                            <table class="w-full border-collapse">
+                                <thead>
+                                    <tr class="border-b">
+                                        <th class="text-left p-2 font-semibold">Selected</th>
+                                        <th class="text-left p-2 font-semibold">Translation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="p-2">{sentence}</td>
+                                        <td class="p-2">{move || selected_translation.get()}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-4">
+                            <form action="/add-card">
+                                <input
+                                    type="hidden"
+                                    name="question"
+                                    value=move || selected_translation.get()
+                                />
+                                <input type="hidden" name="answer" value=sentence2 />
+                                <input type="hidden" name="tag" value=LANG />
+                                <input type="hidden" name="source" value="learning-languages app" />
+                                <button
+                                    type="submit"
+                                    class="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer"
+                                >
+                                    Create flashcard
+                                </button>
+                            </form>
+                        </div>
+                    }
+                })
+        }}
     }
 }
