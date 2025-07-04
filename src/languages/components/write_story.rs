@@ -40,10 +40,7 @@ async fn translators_translate(text: String) -> Result<Option<String>, AppError>
 /// Writes a simple story using the words in my vocabulary.
 #[component]
 pub fn WriteStory() -> impl IntoView {
-    let story = Resource::new(
-        || (),
-        |_| async move { write_story().await.unwrap_or_default() },
-    );
+    let story = OnceResource::new(async move { write_story().await.unwrap_or_default() });
 
     view! {
         <div class="flex flex-col h-screen">
