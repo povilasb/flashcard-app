@@ -7,12 +7,15 @@ use leptos::prelude::*;
 use rig::completion::PromptError;
 use serde::{Deserialize, Serialize};
 use server_fn::codec::JsonEncoding;
+#[cfg(feature = "ssr")]
+use translators;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum AppError {
     DuckdbError(String),
     ServerFnError(ServerFnErrorErr),
     LlmError(String),
+    GoogleTranslateError(String),
 }
 
 impl fmt::Display for AppError {
@@ -21,6 +24,7 @@ impl fmt::Display for AppError {
             AppError::DuckdbError(e) => write!(f, "{}", e),
             AppError::ServerFnError(e) => write!(f, "{}", e),
             AppError::LlmError(e) => write!(f, "{}", e),
+            AppError::GoogleTranslateError(e) => write!(f, "{}", e),
         }
     }
 }
@@ -36,6 +40,13 @@ impl From<DuckdbError> for AppError {
 impl From<PromptError> for AppError {
     fn from(e: PromptError) -> Self {
         AppError::LlmError(e.to_string())
+    }
+}
+
+#[cfg(feature = "ssr")]
+impl From<translators::Error> for AppError {
+    fn from(e: translators::Error) -> Self {
+        AppError::GoogleTranslateError(e.to_string())
     }
 }
 

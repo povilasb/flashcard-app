@@ -26,10 +26,7 @@ async fn get_translation(word: String) -> Result<Option<String>, AppError> {
 #[server(Translators, "/api")]
 async fn translators_translate(text: String) -> Result<Option<String>, AppError> {
     let google_trans = GoogleTranslator::default();
-    let translation = google_trans
-        .translate_async(&text, "es", "en")
-        .await
-        .unwrap();
+    let translation = google_trans.translate_async(&text, "es", "en").await?;
     Ok(Some(translation))
 }
 
