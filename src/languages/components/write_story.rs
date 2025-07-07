@@ -7,7 +7,7 @@ use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
 #[cfg(feature = "ssr")]
-use crate::languages::db::Database;
+use crate::words_db;
 #[cfg(feature = "ssr")]
 use translators::{GoogleTranslator, Translator};
 
@@ -20,11 +20,7 @@ async fn write_story() -> Result<String, AppError> {
 
 #[server(GetTranslation, "/api")]
 async fn get_translation(word: String) -> Result<Option<String>, AppError> {
-    Ok(Database::get_instance(LANG)
-        .unwrap()
-        .lock()
-        .unwrap()
-        .get_translation(&word)?)
+    Ok(words_db!(LANG).get_translation(&word)?)
 }
 
 #[server(Translators, "/api")]

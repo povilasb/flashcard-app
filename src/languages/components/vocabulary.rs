@@ -6,18 +6,10 @@ use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
 use crate::languages::model::Word;
+#[cfg(feature = "ssr")]
+use crate::words_db;
 
 static LANG: &str = "spanish";
-
-#[macro_export]
-macro_rules! words_db {
-    ($lang:expr) => {
-        crate::languages::db::Database::get_instance($lang)
-            .unwrap()
-            .lock()
-            .unwrap()
-    };
-}
 
 #[server(GetWords, "/api")]
 async fn get_words() -> Result<Vec<Word>, AppError> {

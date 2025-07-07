@@ -15,6 +15,16 @@ CREATE TABLE IF NOT EXISTS words (
 );
 ";
 
+#[macro_export]
+macro_rules! words_db {
+    ($lang:expr) => {
+        crate::languages::db::Database::get_instance($lang)
+            .unwrap()
+            .lock()
+            .unwrap()
+    };
+}
+
 static DATABASE: OnceCell<Mutex<Database>> = OnceCell::new();
 
 pub struct Database {
