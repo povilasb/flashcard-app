@@ -59,20 +59,10 @@ pub fn Vocabulary() -> impl IntoView {
 
     // Load words
     Effect::new(move |_| {
-        spawn_local(async move {
-            match get_words().await {
-                Ok(loaded_words) => {
-                    set_words.set(loaded_words);
-                }
-                Err(e) => {
-                    set_error.set(Some(format!("Failed to load cards:\n {}", e)));
-                }
-            }
-        });
+        refresh_words(set_words, set_error);
     });
 
     let submit_word_form = ServerAction::<AddWord>::new();
-
     // Handle form submission result
     Effect::new(move |_| {
         if let Some(result) = submit_word_form.value().get() {
@@ -84,6 +74,29 @@ pub fn Vocabulary() -> impl IntoView {
             }
         }
     });
+
+    let maybe_delete_word = move |word_text: String| {
+        if let Some(window) = web_sys::window() {
+            if let Ok(confirmed) = window
+                .confirm_with_message(&format!("Are you sure you want to delete '{}'?", word_text,))
+            {
+                if confirmed {
+                    let word_to_delete = word_text.clone();
+                    let set_words_clone = set_words.clone();
+                    let set_error_clone = set_error.clone();
+                    spawn_local(async move {
+                        match delete_word(word_to_delete).await {
+                            Ok(_) => refresh_words(set_words_clone, set_error_clone),
+                            Err(e) => {
+                                set_error_clone
+                                    .set(Some(format!("Failed to delete word:\n {}", e)));
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    };
 
     view! {
         <div class="text-sm text-gray-500">"Total: " {move || words.get().len()}</div>
@@ -165,33 +178,7 @@ pub fn Vocabulary() -> impl IntoView {
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
                                                 xmlns="http://www.w3.org/2000/svg"
-                                                on:click=move |_| {
-                                                    if let Some(window) = web_sys::window() {
-                                                        if let Ok(confirmed) = window
-                                                            .confirm_with_message(
-                                                                &format!(
-                                                                    "Are you sure you want to delete '{}'?",
-                                                                    word_text2,
-                                                                ),
-                                                            )
-                                                        {
-                                                            if confirmed {
-                                                                let word_to_delete = word_text2.clone();
-                                                                let set_words_clone = set_words.clone();
-                                                                let set_error_clone = set_error.clone();
-                                                                spawn_local(async move {
-                                                                    match delete_word(word_to_delete).await {
-                                                                        Ok(_) => refresh_words(set_words_clone, set_error_clone),
-                                                                        Err(e) => {
-                                                                            set_error_clone
-                                                                                .set(Some(format!("Failed to delete word:\n {}", e)));
-                                                                        }
-                                                                    }
-                                                                });
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                                                on:click=move |_| { maybe_delete_word(word_text2.clone()) }
                                             >
                                                 <path
                                                     stroke-linecap="round"
