@@ -181,21 +181,7 @@ pub fn Vocabulary() -> impl IntoView {
                                                                 let set_error_clone = set_error.clone();
                                                                 spawn_local(async move {
                                                                     match delete_word(word_to_delete).await {
-                                                                        Ok(_) => {
-                                                                            match get_words().await {
-                                                                                Ok(updated_words) => {
-                                                                                    set_words_clone.set(updated_words);
-                                                                                }
-                                                                                Err(e) => {
-                                                                                    set_error_clone
-                                                                                        .set(
-                                                                                            Some(
-                                                                                                format!("Failed to refresh words after deletion:\n {}", e),
-                                                                                            ),
-                                                                                        );
-                                                                                }
-                                                                            }
-                                                                        }
+                                                                        Ok(_) => refresh_words(set_words_clone, set_error_clone),
                                                                         Err(e) => {
                                                                             set_error_clone
                                                                                 .set(Some(format!("Failed to delete word:\n {}", e)));
