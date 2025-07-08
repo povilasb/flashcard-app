@@ -79,8 +79,6 @@ pub fn Vocabulary() -> impl IntoView {
     });
 
     view! {
-        <div class="text-sm text-gray-500">"Total: " {move || words.get().len()}</div>
-
         <ActionForm action=submit_word_form>
             <input
                 name="word"
@@ -119,6 +117,7 @@ pub fn Vocabulary() -> impl IntoView {
             <WordsTable words=words set_words=set_words set_error=set_error page=page />
             <div class="mt-2 flex justify-between">
                 <Pagination page_count=page_count page=page />
+                <div class="text-sm text-gray-500">"Total: " {move || words.get().len()}</div>
                 <button
                     class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
                     on:click=move |_| {
