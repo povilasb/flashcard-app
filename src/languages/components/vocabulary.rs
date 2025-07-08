@@ -59,6 +59,7 @@ pub fn Vocabulary() -> impl IntoView {
     let (error, set_error) = signal(None::<String>);
     let page = RwSignal::new(1);
     let page_count = Memo::new(move |_| (words.get().len() as f64 / 10.0).ceil() as usize);
+    let add_word_form = NodeRef::<leptos::html::Form>::new();
 
     // Load words
     Effect::new(move |_| {
@@ -70,7 +71,12 @@ pub fn Vocabulary() -> impl IntoView {
     Effect::new(move |_| {
         if let Some(result) = submit_word_form.value().get() {
             match result {
-                Ok(_) => refresh_words(set_words, set_error),
+                Ok(_) => {
+                    refresh_words(set_words, set_error);
+                    if let Some(form) = add_word_form.get() {
+                        form.reset();
+                    }
+                }
                 Err(e) => {
                     set_error.set(Some(format!("Failed to add word:\n {}", e)));
                 }
@@ -79,7 +85,7 @@ pub fn Vocabulary() -> impl IntoView {
     });
 
     view! {
-        <ActionForm action=submit_word_form>
+        <ActionForm action=submit_word_form node_ref=add_word_form>
             <input
                 name="word"
                 type="text"
