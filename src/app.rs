@@ -4,8 +4,7 @@ use leptos_router::{
     components::{Route, Router, Routes, A},
     path, StaticSegment,
 };
-use thaw::ssr::SSRMountStyleProvider;
-use thaw::ConfigProvider;
+use thaw::{ssr::SSRMountStyleProvider, ConfigProvider, ToasterProvider};
 
 use crate::components::add_card::AddCard;
 use crate::components::edit_card::EditCard;
@@ -42,11 +41,13 @@ pub fn App() -> impl IntoView {
 
     view! {
         <ConfigProvider>
-            // injects a stylesheet into the document <head>
-            // id=leptos means cargo-leptos will hot-reload this stylesheet
-            <Stylesheet id="leptos" href="/pkg/flashcard-app.css" />
-            <Title text="Review flashcards" />
-            <AppRouter />
+            <ToasterProvider>
+                // injects a stylesheet into the document <head>
+                // id=leptos means cargo-leptos will hot-reload this stylesheet
+                <Stylesheet id="leptos" href="/pkg/flashcard-app.css" />
+                <Title text="Review flashcards" />
+                <AppRouter />
+            </ToasterProvider>
         </ConfigProvider>
     }
 }

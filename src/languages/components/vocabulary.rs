@@ -1,8 +1,7 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use thaw::Pagination;
+use thaw::*;
 
-use crate::components::error_notification::ErrorNotification;
 use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
@@ -40,30 +39,56 @@ async fn add_from_flashcards() -> Result<(), AppError> {
     ai::Agent::new(LANG).populate_words_db().await
 }
 
-fn refresh_words(set_words: WriteSignal<Vec<Word>>, set_error: WriteSignal<Option<String>>) {
+fn refresh_words(set_words: WriteSignal<Vec<Word>>, show_error: ShowError) {
     spawn_local(async move {
         match get_words().await {
             Ok(updated_words) => {
                 set_words.set(updated_words);
             }
             Err(e) => {
-                set_error.set(Some(format!("Failed to load cards:\n {}", e)));
+                show_error.show(format!("Failed to load cards:\n {}", e));
             }
         }
     });
 }
 
+#[derive(Clone, Copy)]
+pub struct ShowError {
+    toaster: ToasterInjection,
+}
+
+impl ShowError {
+    pub fn with_toaster() -> Self {
+        let toaster = ToasterInjection::expect_context();
+        Self { toaster }
+    }
+
+    pub fn show(&self, error: String) {
+        self.toaster.dispatch_toast(
+            move || {
+                view! {
+                    <Toast>
+                        <ToastTitle>"Error"</ToastTitle>
+                        <ToastBody>{error}</ToastBody>
+                    </Toast>
+                }
+            },
+            ToastOptions::default().with_intent(ToastIntent::Error),
+        );
+    }
+}
+
 #[component]
 pub fn Vocabulary() -> impl IntoView {
     let (words, set_words) = signal(Vec::new());
-    let (error, set_error) = signal(None::<String>);
     let page = RwSignal::new(1);
     let page_count = Memo::new(move |_| (words.get().len() as f64 / 10.0).ceil() as usize);
     let add_word_form = NodeRef::<leptos::html::Form>::new();
+    let show_error = ShowError::with_toaster();
 
     // Load words
     Effect::new(move |_| {
-        refresh_words(set_words, set_error);
+        refresh_words(set_words, show_error);
     });
 
     let submit_word_form = ServerAction::<AddWord>::new();
@@ -72,13 +97,13 @@ pub fn Vocabulary() -> impl IntoView {
         if let Some(result) = submit_word_form.value().get() {
             match result {
                 Ok(_) => {
-                    refresh_words(set_words, set_error);
+                    refresh_words(set_words, show_error);
                     if let Some(form) = add_word_form.get() {
                         form.reset();
                     }
                 }
                 Err(e) => {
-                    set_error.set(Some(format!("Failed to add word:\n {}", e)));
+                    show_error.show(format!("Failed to add word:\n {}", e));
                 }
             }
         }
@@ -120,7 +145,7 @@ pub fn Vocabulary() -> impl IntoView {
         </ActionForm>
 
         <div class="overflow-x-auto">
-            <WordsTable words=words set_words=set_words set_error=set_error page=page />
+            <WordsTable words=words set_words=set_words show_error=show_error page=page />
             <div class="mt-2 flex justify-between">
                 <Pagination page_count=page_count page=page />
                 <div class="text-sm text-gray-500">"Total: " {move || words.get().len()}</div>
@@ -129,12 +154,10 @@ pub fn Vocabulary() -> impl IntoView {
                     on:click=move |_| {
                         spawn_local(async move {
                             match add_from_flashcards().await {
-                                Ok(_) => refresh_words(set_words, set_error),
+                                Ok(_) => refresh_words(set_words, show_error),
                                 Err(e) => {
-                                    set_error
-                                        .set(
-                                            Some(format!("Failed to add from flashcards:\n {}", e)),
-                                        );
+                                    show_error
+                                        .show(format!("Failed to add from flashcards:\n {}", e));
                                 }
                             }
                         });
@@ -144,8 +167,6 @@ pub fn Vocabulary() -> impl IntoView {
                 </button>
             </div>
         </div>
-
-        <ErrorNotification error=error />
     }
 }
 
@@ -153,7 +174,7 @@ pub fn Vocabulary() -> impl IntoView {
 fn WordsTable(
     #[prop(into)] words: ReadSignal<Vec<Word>>,
     #[prop(into)] set_words: WriteSignal<Vec<Word>>,
-    #[prop(into)] set_error: WriteSignal<Option<String>>,
+    #[prop(into)] show_error: ShowError,
     #[prop(into)] page: Signal<usize>,
 ) -> impl IntoView {
     view! {
@@ -189,7 +210,7 @@ fn WordsTable(
                                             viewBox="0 0 24 24"
                                             xmlns="http://www.w3.org/2000/svg"
                                             on:click=move |_| {
-                                                maybe_delete_word(word_text2.clone(), set_words, set_error)
+                                                maybe_delete_word(word_text2.clone(), set_words, show_error)
                                             }
                                         >
                                             <path
@@ -212,9 +233,9 @@ fn WordsTable(
                                                     if let Err(e) = update_word_translation(word_text, value)
                                                         .await
                                                     {
-                                                        set_error
-                                                            .set(
-                                                                Some(format!("Failed to update word translation:\n {}", e)),
+                                                        show_error
+                                                            .show(
+                                                                format!("Failed to update word translation:\n {}", e),
                                                             );
                                                     }
                                                 });
@@ -232,11 +253,7 @@ fn WordsTable(
     }
 }
 
-fn maybe_delete_word(
-    word_text: String,
-    set_words: WriteSignal<Vec<Word>>,
-    set_error: WriteSignal<Option<String>>,
-) {
+fn maybe_delete_word(word_text: String, set_words: WriteSignal<Vec<Word>>, show_error: ShowError) {
     if let Some(window) = web_sys::window() {
         if let Ok(confirmed) = window
             .confirm_with_message(&format!("Are you sure you want to delete '{}'?", word_text,))
@@ -245,9 +262,9 @@ fn maybe_delete_word(
                 let word_to_delete = word_text.clone();
                 spawn_local(async move {
                     match delete_word(word_to_delete).await {
-                        Ok(_) => refresh_words(set_words, set_error),
+                        Ok(_) => refresh_words(set_words, show_error),
                         Err(e) => {
-                            set_error.set(Some(format!("Failed to delete word:\n {}", e)));
+                            show_error.show(format!("Failed to delete word:\n {}", e));
                         }
                     }
                 });
