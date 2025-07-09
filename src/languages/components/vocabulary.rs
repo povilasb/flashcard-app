@@ -2,6 +2,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use thaw::*;
 
+use crate::components::ShowError;
 use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
@@ -52,39 +53,13 @@ fn refresh_words(set_words: WriteSignal<Vec<Word>>, show_error: ShowError) {
     });
 }
 
-#[derive(Clone, Copy)]
-pub struct ShowError {
-    toaster: ToasterInjection,
-}
-
-impl ShowError {
-    pub fn with_toaster() -> Self {
-        let toaster = ToasterInjection::expect_context();
-        Self { toaster }
-    }
-
-    pub fn show(&self, error: String) {
-        self.toaster.dispatch_toast(
-            move || {
-                view! {
-                    <Toast>
-                        <ToastTitle>"Error"</ToastTitle>
-                        <ToastBody>{error}</ToastBody>
-                    </Toast>
-                }
-            },
-            ToastOptions::default().with_intent(ToastIntent::Error),
-        );
-    }
-}
-
 #[component]
 pub fn Vocabulary() -> impl IntoView {
     let (words, set_words) = signal(Vec::new());
     let page = RwSignal::new(1);
     let page_count = Memo::new(move |_| (words.get().len() as f64 / 10.0).ceil() as usize);
     let add_word_form = NodeRef::<leptos::html::Form>::new();
-    let show_error = ShowError::with_toaster();
+    let show_error = ShowError::from_ctx();
 
     // Load words
     Effect::new(move |_| {
@@ -145,7 +120,7 @@ pub fn Vocabulary() -> impl IntoView {
         </ActionForm>
 
         <div class="overflow-x-auto">
-            <WordsTable words=words set_words=set_words show_error=show_error page=page />
+            <WordsTable words=words set_words=set_words page=page />
             <div class="mt-2 flex justify-between">
                 <Pagination page_count=page_count page=page />
                 <div class="text-sm text-gray-500">"Total: " {move || words.get().len()}</div>
@@ -174,9 +149,9 @@ pub fn Vocabulary() -> impl IntoView {
 fn WordsTable(
     #[prop(into)] words: ReadSignal<Vec<Word>>,
     #[prop(into)] set_words: WriteSignal<Vec<Word>>,
-    #[prop(into)] show_error: ShowError,
     #[prop(into)] page: Signal<usize>,
 ) -> impl IntoView {
+    let show_error = ShowError::from_ctx();
     view! {
         <table class="min-w-full bg-white border border-gray-300">
             <thead>
