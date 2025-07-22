@@ -12,7 +12,6 @@ use crate::components::list_cards::ListCards;
 use crate::components::review_by_tag::ReviewByTag;
 use crate::components::review_cards::ReviewAllCards;
 use crate::components::view_card::ViewCard;
-use crate::components::ShowError;
 use crate::languages::components::{GenerateSentence, Overview, Vocabulary, WriteStory};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
