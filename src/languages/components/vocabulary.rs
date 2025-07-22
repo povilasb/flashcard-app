@@ -1,6 +1,5 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use thaw::*;
 
 use crate::components::ShowError;
 use crate::errors::AppError;
@@ -56,8 +55,6 @@ fn refresh_words(set_words: WriteSignal<Vec<Word>>, show_error: ShowError) {
 #[component]
 pub fn Vocabulary() -> impl IntoView {
     let (words, set_words) = signal(Vec::new());
-    let page = RwSignal::new(1);
-    let page_count = Memo::new(move |_| (words.get().len() as f64 / 10.0).ceil() as usize);
     let add_word_form = NodeRef::<leptos::html::Form>::new();
     let show_error = ShowError::from_ctx();
 
@@ -120,9 +117,8 @@ pub fn Vocabulary() -> impl IntoView {
         </ActionForm>
 
         <div class="overflow-x-auto">
-            <WordsTable words=words set_words=set_words page=page />
+            <WordsTable words=words set_words=set_words />
             <div class="mt-2 flex justify-between">
-                <Pagination page_count=page_count page=page />
                 <div class="text-sm text-gray-500">"Total: " {move || words.get().len()}</div>
                 <button
                     class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
@@ -149,7 +145,6 @@ pub fn Vocabulary() -> impl IntoView {
 fn WordsTable(
     #[prop(into)] words: ReadSignal<Vec<Word>>,
     #[prop(into)] set_words: WriteSignal<Vec<Word>>,
-    #[prop(into)] page: Signal<usize>,
 ) -> impl IntoView {
     let show_error = ShowError::from_ctx();
     view! {
@@ -164,13 +159,8 @@ fn WordsTable(
             </thead>
             <tbody>
                 {move || {
-                    let page_words = words
-                        .get()
-                        .into_iter()
-                        .skip((page.get() - 1) * 10)
-                        .take(10)
-                        .collect::<Vec<_>>();
-                    page_words
+                    let words = words.get();
+                    words
                         .into_iter()
                         .map(|word| {
                             let word_text = word.word.clone();
