@@ -32,7 +32,6 @@ manana
 tomorrow
 </translation>
 
-Use only ASCII characters.
 Don't start with 'Hola'.
 ";
 
