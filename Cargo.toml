@@ -17,12 +17,9 @@ tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 wasm-bindgen = { version = "=0.2.100", optional = true }
 web-sys = { version = "0.3", features = ["FileList", "HtmlInputElement", "File", "Element", "DomRect", "Selection", "Window"] }
 serde = "1.0.219"
-ulid = { version = "1.2.1", features = ["serde"], optional = true }
 chrono = { version = "0.4.38", features = ["serde"] }
 once_cell = "1.19.0"
 anyhow = "1.0.98"
-toml = "0.8.22"
-glob = { version = "0.3.2", optional = true }
 gloo-timers = "0.3.0"
 duckdb = "1.3.0"
 tower-http = { version = "0.6.6", features = ["fs"], optional = true }
@@ -56,8 +53,6 @@ ssr = [
     "dep:axum",
     "dep:tokio",
     "dep:leptos_axum",
-    "dep:ulid",
-    "dep:glob",
     "dep:tower-http",
     "dep:rig-core",
     "dep:dotenv",
