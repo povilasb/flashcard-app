@@ -25,6 +25,7 @@ async fn update_card(
     source: Option<String>,
     tags: String,
     question_img_fname: Option<String>,
+    answer_img_fname: Option<String>,
 ) -> Result<(), ServerFnError> {
     let db = Database::get_instance().unwrap().lock().unwrap();
 
@@ -33,6 +34,7 @@ async fn update_card(
     card.examples = Some(examples);
     card.source = source;
     card.question_img = question_img_fname;
+    card.img = answer_img_fname;
     card.tags = tags
         .split(',')
         .map(|s| s.trim().to_string())
