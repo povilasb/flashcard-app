@@ -5,7 +5,6 @@ use crate::db::Database;
 use crate::model;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use leptos::*;
 
 #[server(GetNextCards, "/api")]
 async fn get_cards() -> Result<Vec<model::Flashcard>, ServerFnError> {

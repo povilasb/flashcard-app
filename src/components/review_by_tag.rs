@@ -5,7 +5,6 @@ use crate::db::Database;
 use crate::model;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use leptos::*;
 use leptos_router::hooks::use_params;
 use leptos_router::params::Params;
 
