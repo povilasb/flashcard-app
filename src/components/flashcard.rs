@@ -1,8 +1,7 @@
-use crate::components::markdown::Markdown;
+use crate::components::richtext::RichText;
 use crate::model;
 use crate::model::FlashcardAnswer;
 use leptos::prelude::*;
-use leptos::*;
 
 #[component]
 pub fn Flashcard(
@@ -25,7 +24,7 @@ pub fn Flashcard(
             <div class="bg-white border border-slate-200 rounded-lg p-6 mb-4 shadow text-left relative">
                 <div class="flex flex-col items-start gap-4 justify-start">
                     <p class="m-0 text-[1.1rem] leading-6 text-left">
-                        <Markdown text=card.question.clone() />
+                        <RichText text=card.question.clone() />
                     </p>
                     <Show
                         when=move || card.question_img.clone().is_some()
@@ -46,7 +45,7 @@ pub fn Flashcard(
                 >
                     <p class="m-0 text-[1.1rem] leading-6 text-left">
                         <hr class="my-2 mb-4" />
-                        <Markdown text=card.answer.clone() />
+                        <RichText text=card.answer.clone() />
                         <Show when=move || card.img.clone().is_some() fallback=move || view! {}>
                             <div class="mt-4">
                                 <img
@@ -63,7 +62,7 @@ pub fn Flashcard(
                         <div class="bg-gray-50 p-4 rounded-md">
                             <b>"Examples:"</b>
                             <br />
-                            <Markdown text=card.examples.clone().unwrap_or_default() />
+                            <RichText text=card.examples.clone().unwrap_or_default() />
                         </div>
                     </div>
                 </Show>

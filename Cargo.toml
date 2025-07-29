@@ -30,6 +30,7 @@ dotenv = { version = "0.15", optional = true }
 server_fn = "0.8.2"
 translators = { version = "0.1", optional = true, features = ["tokio-async", "google"] }
 thaw = { git = "https://github.com/thaw-ui/thaw", branch = "thaw/v0.5" }
+mathemascii = "0.4.0"
 
 [[bin]]
 name = "cli"

@@ -1,3 +1,4 @@
+mod richtext;
 mod show_error;
 
 pub mod add_card;
@@ -10,4 +11,5 @@ pub mod review_by_tag;
 pub mod review_cards;
 pub mod view_card;
 
+pub use richtext::RichText;
 pub use show_error::ShowError;
