@@ -1,4 +1,4 @@
-use crate::components::richtext::RichText;
+use crate::components::RichText;
 use crate::model;
 use crate::model::FlashcardAnswer;
 use leptos::prelude::*;
