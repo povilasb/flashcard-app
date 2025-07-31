@@ -44,16 +44,17 @@ pub fn RichText(#[prop(into)] text: String) -> impl IntoView {
 #[derive(Debug)]
 enum ParseState {
     RawStr(usize, usize),
-    //InMarkdown(usize, usize),
     InAsciiMath(usize, usize),
 }
 
 impl ParseState {
     fn text_block(&self, text: &str) -> TextBlock {
         match self {
-            ParseState::RawStr(start, end) => TextBlock::Raw(text[*start..*end].to_string()),
+            ParseState::RawStr(start, end) => {
+                TextBlock::Raw(text.chars().skip(*start).take(*end - *start).collect())
+            }
             ParseState::InAsciiMath(start, end) => {
-                TextBlock::AsciiMath(text[*start..*end].to_string())
+                TextBlock::AsciiMath(text.chars().skip(*start).take(*end - *start).collect())
             }
         }
     }
