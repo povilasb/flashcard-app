@@ -8,16 +8,13 @@ use crate::components::markdown::Markdown;
 pub enum TextBlock {
     /// Just a string.
     Raw(String),
-    Markdown(String),
     AsciiMath(String),
 }
 
 impl TextBlock {
     pub fn is_empty(&self) -> bool {
         match self {
-            TextBlock::Raw(text) => text.is_empty(),
-            TextBlock::Markdown(text) => text.is_empty(),
-            TextBlock::AsciiMath(text) => text.is_empty(),
+            TextBlock::Raw(text) | TextBlock::AsciiMath(text) => text.is_empty(),
         }
     }
 }
@@ -30,13 +27,13 @@ pub fn AsciiMath(input: String) -> impl IntoView {
     view! { <span inner_html=math_ml></span> }
 }
 
+/// Renders AsciiMath and Markdown.
 #[component]
 pub fn RichText(#[prop(into)] text: String) -> impl IntoView {
     parse_rich_text(&text)
         .into_iter()
         .map(|block| match block {
-            TextBlock::Raw(text) => view! { <span>{text}</span> }.into_any(),
-            TextBlock::Markdown(text) => {
+            TextBlock::Raw(text) => {
                 view! { <Markdown text=Memo::new(move |_| text.clone()) /> }.into_any()
             }
             TextBlock::AsciiMath(text) => view! { <AsciiMath input=text /> }.into_any(),
@@ -70,9 +67,8 @@ enum Parsed {
 
 /// A minimalistic parser for rich text:
 /// ```
-/// * Raw text
+/// * Markdown
 /// * AsciiMath: `math 1/3`
-/// * Markdown: `md *bold*`
 /// ```
 fn parse_rich_text(text: &str) -> Vec<TextBlock> {
     let mut text_blocks = Vec::new();
