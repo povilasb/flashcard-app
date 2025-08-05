@@ -96,7 +96,7 @@ pub fn ReviewCards(#[prop(into)] cards: Signal<Vec<model::Flashcard>>) -> impl I
                 fallback=|| {
                     view! {
                         <div class="max-w-[600px] mx-auto my-8 p-4">
-                            <div>"Done"</div>
+                            <div class="text-center">"Nothing to review at the moment."</div>
                         </div>
                     }
                 }
