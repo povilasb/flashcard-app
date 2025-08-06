@@ -15,7 +15,7 @@ static LANG: &str = "spanish";
 
 #[server(WriteStory, "/api")]
 async fn write_story() -> Result<String, AppError> {
-    ai::Agent::new("spanish").gen_story().await
+    ai::Agent::new(LANG).gen_story().await
 }
 
 #[server(GetTranslation, "/api")]
