@@ -32,7 +32,7 @@ manana
 tomorrow
 </translation>
 
-Don't start with 'Hola'.
+Don't start with 'Hola', 'Hello', 'Bonjour', 'Hallo', etc.
 ";
 
 static EXTRACT_WORDS_PROMPT: &str = "
