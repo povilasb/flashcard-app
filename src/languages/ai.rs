@@ -77,7 +77,7 @@ impl Agent {
     pub fn new(lang: &str) -> Self {
         Self {
             llm_client: anthropic::Client::from_env()
-                .agent(anthropic::CLAUDE_3_7_SONNET)
+                .agent(anthropic::CLAUDE_4_SONNET)
                 .max_tokens(1000)
                 .build(),
             lang: lang.to_string(),
