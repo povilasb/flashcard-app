@@ -67,7 +67,7 @@ enum Parsed {
 }
 
 /// A minimalistic parser for rich text:
-/// ```
+/// ```md
 /// * Markdown
 /// * AsciiMath: `math 1/3`
 /// ```
