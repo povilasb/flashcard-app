@@ -6,6 +6,7 @@ use web_sys::window;
 use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
+use crate::settings::Language;
 #[cfg(feature = "ssr")]
 use crate::settings::Settings;
 #[cfg(feature = "ssr")]
@@ -14,7 +15,7 @@ use crate::words_db;
 use translators::{GoogleTranslator, Translator};
 
 #[server(WriteStory, "/api")]
-async fn write_story() -> Result<(String, String), AppError> {
+async fn write_story() -> Result<(String, Language), AppError> {
     let agent = ai::Agent::from_settings();
     let story = agent.gen_story().await?;
     Ok((story, agent.lang))
@@ -28,17 +29,11 @@ async fn get_translation(word: String) -> Result<Option<String>, AppError> {
 #[server(Translators, "/api")]
 async fn translators_translate(text: String) -> Result<Option<String>, AppError> {
     let settings = Settings::get();
-    let target_lang = match settings.learning_language.as_str() {
-        "spanish" => "es",
-        "french" => "fr",
-        "portuguese" => "pt-PT",
-        "german" => "de",
-        _ => {
-            return Err(AppError::GoogleTranslateError(format!(
-                "Unsupported language: {}",
-                settings.learning_language
-            )))
-        }
+    let target_lang = match settings.learning_language {
+        Language::Spanish => "es",
+        Language::French => "fr",
+        Language::Portuguese => "pt-PT",
+        Language::German => "de",
     };
 
     let google_trans = GoogleTranslator::default();
@@ -73,7 +68,7 @@ pub fn WriteStory() -> impl IntoView {
 #[component]
 fn Story(
     #[prop(into)] story: Signal<String>,
-    #[prop(into)] learning_language: String,
+    #[prop(into)] learning_language: Language,
 ) -> impl IntoView {
     let (hovered_word, set_hovered_word) = signal(None::<String>);
     let (translation, set_translation) = signal(None::<String>);
@@ -255,7 +250,7 @@ fn Story(
                                     value=move || selected_translation.get()
                                 />
                                 <input type="hidden" name="answer" value=sentence2 />
-                                <input type="hidden" name="tag" value=learning_language.clone() />
+                                <input type="hidden" name="tag" value=learning_language.as_str() />
                                 <input type="hidden" name="source" value="learning-languages app" />
                                 <button
                                     type="submit"

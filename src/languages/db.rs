@@ -20,7 +20,7 @@ macro_rules! words_db {
     () => {
         crate::languages::db::Database::get_instance(
             &crate::settings::Settings::get().db_path,
-            &crate::settings::Settings::get().learning_language,
+            crate::settings::Settings::get().learning_language.as_str(),
         )
         .unwrap()
         .lock()

@@ -5,9 +5,10 @@ use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
 use crate::languages::model::NewSentence;
+use crate::settings::Language;
 
 #[server(GenerateSentence, "/api")]
-async fn generate_sentence() -> Result<(NewSentence, String), AppError> {
+async fn generate_sentence() -> Result<(NewSentence, Language), AppError> {
     let agent = ai::Agent::from_settings();
     let sentence = agent.gen_new_sentence().await?;
     Ok((sentence, agent.lang))
@@ -32,7 +33,7 @@ pub fn GenerateSentence() -> impl IntoView {
                     match generate_sentence().await {
                         Ok((sentence, language)) => {
                             new_sentence.set(Some(sentence));
-                            flashcard_tag.set(language);
+                            flashcard_tag.set(language.as_str().to_string());
                         }
                         Err(e) => {
                             web_sys::console::error_1(
