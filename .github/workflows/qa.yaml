@@ -16,6 +16,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - uses: Swatinem/rust-cache@v2
     
     - name: Install Nix
       uses: cachix/install-nix-action@v25
@@ -23,7 +24,7 @@ jobs:
         nix_path: nixpkgs=channel:nixos-unstable
     
     - name: Build
-      run: nix-shell --run "cargo check --verbose --features=ssr"
+      run: nix-shell --run "cargo check --locked --verbose --features=ssr"
     
     - name: Run tests
-      run: nix-shell --run "cargo test --verbose --features=ssr"
+      run: nix-shell --run "cargo test --locked --verbose --features=ssr"
