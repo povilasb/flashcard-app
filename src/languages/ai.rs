@@ -4,10 +4,11 @@ use duckdb::Error as DuckdbError;
 use rig::client::CompletionClient;
 use rig::{client::ProviderClient, completion::Prompt, providers::anthropic};
 
-use super::db::Database;
 use super::model::NewSentence;
 use crate::db::Database as FlashcardsDb;
 use crate::errors::AppError;
+use crate::settings::{Language, Settings};
+use crate::words_db;
 
 static GEN_NEW_WORDS_PROMPT: &str = "
 You are bilingual {lang} and English speaker.
@@ -32,7 +33,7 @@ manana
 tomorrow
 </translation>
 
-Don't start with 'Hola'.
+Don't start with 'Hola', 'Hello', 'Bonjour', 'Hallo', etc.
 ";
 
 static EXTRACT_WORDS_PROMPT: &str = "
@@ -68,35 +69,37 @@ Generate a short story using these words. You don't need to use all the words.
 // AI agent that understands the language we are learning.
 pub struct Agent {
     llm_client: rig::agent::Agent<anthropic::completion::CompletionModel>,
-    lang: String,
+    /// The language that this AI agent is working with.
+    pub lang: Language,
 }
 
 impl Agent {
-    /// Initialize an agent with anthropic API key set in the environment:
-    ///     ANTHROPIC_API_KEY=sk-ant-api03-...
-    pub fn new(lang: &str) -> Self {
+    pub fn from_settings() -> Self {
+        let settings = Settings::get();
+        Self::new(settings.learning_language, &settings.anthropic_api_key)
+    }
+    pub fn new(lang: Language, anthropic_api_key: &str) -> Self {
         Self {
-            llm_client: anthropic::Client::from_env()
+            llm_client: anthropic::Client::new(anthropic_api_key)
                 .agent(anthropic::CLAUDE_4_SONNET)
                 .max_tokens(1000)
                 .build(),
-            lang: lang.to_string(),
+            lang: lang,
         }
     }
 
     pub async fn gen_new_sentence(&self) -> Result<NewSentence, AppError> {
-        let words = {
-            let words_db = Database::get_instance(&self.lang).unwrap().lock().unwrap();
-            words_db.all_words()?
-        };
-        let prompt = GEN_NEW_WORDS_PROMPT.replace("{lang}", &self.lang).replace(
-            "{dict}",
-            &words
-                .iter()
-                .map(|word| format!("{}", word.word))
-                .collect::<Vec<String>>()
-                .join("\n"),
-        );
+        let words = words_db!().all_words()?;
+        let prompt = GEN_NEW_WORDS_PROMPT
+            .replace("{lang}", self.lang.as_str())
+            .replace(
+                "{dict}",
+                &words
+                    .iter()
+                    .map(|word| format!("{}", word.word))
+                    .collect::<Vec<String>>()
+                    .join("\n"),
+            );
 
         let response = self.llm_client.prompt(prompt).await?;
 
@@ -112,15 +115,15 @@ impl Agent {
 
     // From flashcards...
     pub async fn populate_words_db(&self) -> Result<(), AppError> {
-        let sentences = get_all_sentences(&self.lang)?;
+        let sentences = get_all_sentences(self.lang.as_str())?;
         let prompt = EXTRACT_WORDS_PROMPT
-            .replace("{lang}", &self.lang)
+            .replace("{lang}", self.lang.as_str())
             .replace("{sentences}", &sentences);
 
         let response = self.llm_client.prompt(&prompt).await?;
         let words = llm_resp_parse_words(&response);
 
-        let words_db = Database::get_instance(&self.lang).unwrap().lock().unwrap();
+        let words_db = words_db!();
         for word in words {
             words_db.add_word(&word, "")?;
         }
@@ -129,18 +132,17 @@ impl Agent {
     }
 
     pub async fn gen_story(&self) -> Result<String, AppError> {
-        let words = {
-            let words_db = Database::get_instance(&self.lang).unwrap().lock().unwrap();
-            words_db.all_words()?
-        };
-        let prompt = GEN_STORY_PROMPT.replace("{lang}", &self.lang).replace(
-            "{dict}",
-            &words
-                .iter()
-                .map(|word| format!("{}", word.word))
-                .collect::<Vec<String>>()
-                .join("\n"),
-        );
+        let words = { words_db!().all_words()? };
+        let prompt = GEN_STORY_PROMPT
+            .replace("{lang}", self.lang.as_str())
+            .replace(
+                "{dict}",
+                &words
+                    .iter()
+                    .map(|word| format!("{}", word.word))
+                    .collect::<Vec<String>>()
+                    .join("\n"),
+            );
 
         let response = self.llm_client.prompt(&prompt).await?;
         Ok(response)
@@ -162,7 +164,7 @@ pub async fn populate_words_db(lang: &str) -> Result<(), AppError> {
     let response = agent.prompt(&prompt).await?;
     let words = llm_resp_parse_words(&response);
 
-    let words_db = Database::get_instance(lang).unwrap().lock().unwrap();
+    let words_db = words_db!();
     for word in words {
         words_db.add_word(&word, "")?;
     }

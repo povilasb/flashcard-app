@@ -5,15 +5,14 @@ async fn main() {
     use axum::http::HeaderValue;
     use axum::response::Response;
     use axum::Router;
-    use dotenv::dotenv;
     use flashcard_app::app::*;
+    use flashcard_app::settings::Settings;
     use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use tower_http::services::ServeDir;
 
-    // Load environment variables from .env file
-    dotenv().ok();
+    Settings::load().expect("Failed to load settings");
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
