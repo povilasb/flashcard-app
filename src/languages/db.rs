@@ -17,11 +17,13 @@ CREATE TABLE IF NOT EXISTS words (
 
 #[macro_export]
 macro_rules! words_db {
-    ($lang:expr) => {
-        crate::languages::db::Database::get_instance($lang)
-            .unwrap()
-            .lock()
-            .unwrap()
+    () => {
+        crate::languages::db::Database::get_instance(
+            &crate::settings::Settings::get().learning_language,
+        )
+        .unwrap()
+        .lock()
+        .unwrap()
     };
 }
 

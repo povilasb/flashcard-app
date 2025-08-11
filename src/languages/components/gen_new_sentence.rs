@@ -6,17 +6,18 @@ use crate::errors::AppError;
 use crate::languages::ai;
 use crate::languages::model::NewSentence;
 
-static LANG: &str = "spanish";
-
 #[server(GenerateSentence, "/api")]
-async fn generate_sentence() -> Result<NewSentence, AppError> {
-    ai::Agent::new(LANG).gen_new_sentence().await
+async fn generate_sentence() -> Result<(NewSentence, String), AppError> {
+    let agent = ai::Agent::from_settings();
+    let sentence = agent.gen_new_sentence().await?;
+    Ok((sentence, agent.lang))
 }
 
 /// Using LLMs, generate a new sentence with a new word and its translation for iterative language learning.
 #[component]
 pub fn GenerateSentence() -> impl IntoView {
     let new_sentence = RwSignal::new(None);
+    let flashcard_tag = RwSignal::new("".to_string());
 
     view! {
         <div class="mb-4 mt-12 text-center">
@@ -29,7 +30,10 @@ pub fn GenerateSentence() -> impl IntoView {
             on:click=move |_| {
                 spawn_local(async move {
                     match generate_sentence().await {
-                        Ok(sentence) => new_sentence.set(Some(sentence)),
+                        Ok((sentence, language)) => {
+                            new_sentence.set(Some(sentence));
+                            flashcard_tag.set(language);
+                        }
                         Err(e) => {
                             web_sys::console::error_1(
                                 &format!("Error generating sentence: {}", e).into(),
@@ -80,7 +84,7 @@ pub fn GenerateSentence() -> impl IntoView {
                     name="answer"
                     value=move || new_sentence.get().map(|s| s.text)
                 />
-                <input type="hidden" name="tag" value=LANG />
+                <input type="hidden" name="tag" value=move || flashcard_tag.get() />
                 <input type="hidden" name="source" value="learning-languages app" />
                 <button
                     type="submit"

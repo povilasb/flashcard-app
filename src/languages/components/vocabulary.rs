@@ -9,34 +9,34 @@ use crate::languages::model::Word;
 #[cfg(feature = "ssr")]
 use crate::words_db;
 
-static LANG: &str = "spanish";
-
 #[server(GetWords, "/api")]
 async fn get_words() -> Result<Vec<Word>, AppError> {
-    Ok(words_db!(LANG).all_words()?)
+    Ok(words_db!().all_words()?)
 }
 
 #[server(UpdateWordTranslation, "/api")]
 async fn update_word_translation(word: String, translation: String) -> Result<(), AppError> {
-    words_db!(LANG).update_word_translation(&word, &translation)?;
+    words_db!().update_word_translation(&word, &translation)?;
     Ok(())
 }
 
 #[server(DeleteWord, "/api")]
 async fn delete_word(word: String) -> Result<(), AppError> {
-    words_db!(LANG).delete_word(&word)?;
+    words_db!().delete_word(&word)?;
     Ok(())
 }
 
 #[server(AddWord, "/api")]
 async fn add_word(word: String, translation: String) -> Result<(), AppError> {
-    words_db!(LANG).add_word(&word, &translation)?;
+    words_db!().add_word(&word, &translation)?;
     Ok(())
 }
 
 #[server(AddFromFlashcards, "/api")]
 async fn add_from_flashcards() -> Result<(), AppError> {
-    ai::Agent::new(LANG).populate_words_db().await
+    let agent = ai::Agent::from_settings();
+    agent.populate_words_db().await?;
+    Ok(())
 }
 
 fn refresh_words(set_words: WriteSignal<Vec<Word>>, show_error: ShowError) {

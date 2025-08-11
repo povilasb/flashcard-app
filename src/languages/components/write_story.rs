@@ -7,26 +7,43 @@ use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
 #[cfg(feature = "ssr")]
+use crate::settings::Settings;
+#[cfg(feature = "ssr")]
 use crate::words_db;
 #[cfg(feature = "ssr")]
 use translators::{GoogleTranslator, Translator};
 
-static LANG: &str = "spanish";
-
 #[server(WriteStory, "/api")]
-async fn write_story() -> Result<String, AppError> {
-    ai::Agent::new(LANG).gen_story().await
+async fn write_story() -> Result<(String, String), AppError> {
+    let agent = ai::Agent::from_settings();
+    let story = agent.gen_story().await?;
+    Ok((story, agent.lang))
 }
 
 #[server(GetTranslation, "/api")]
 async fn get_translation(word: String) -> Result<Option<String>, AppError> {
-    Ok(words_db!(LANG).get_translation(&word)?)
+    Ok(words_db!().get_translation(&word)?)
 }
 
 #[server(Translators, "/api")]
 async fn translators_translate(text: String) -> Result<Option<String>, AppError> {
+    let settings = Settings::get();
+    let target_lang = match settings.learning_language.as_str() {
+        "spanish" => "es",
+        "french" => "fr",
+        "portuguese" => "pt-PT",
+        _ => {
+            return Err(AppError::GoogleTranslateError(format!(
+                "Unsupported language: {}",
+                settings.learning_language
+            )))
+        }
+    };
+
     let google_trans = GoogleTranslator::default();
-    let translation = google_trans.translate_async(&text, "es", "en").await?;
+    let translation = google_trans
+        .translate_async(&text, target_lang, "en")
+        .await?;
     Ok(Some(translation))
 }
 
@@ -43,8 +60,8 @@ pub fn WriteStory() -> impl IntoView {
                 view! { <Spinner /> }
             }>
                 {move || Suspend::new(async move {
-                    let story = story.await;
-                    view! { <Story story=story /> }
+                    let (story, learning_language) = story.await;
+                    view! { <Story story=story learning_language=learning_language /> }
                 })}
             </Transition>
         </div>
@@ -53,7 +70,10 @@ pub fn WriteStory() -> impl IntoView {
 
 /// Story component that displays the story content with word hover functionality
 #[component]
-fn Story(#[prop(into)] story: Signal<String>) -> impl IntoView {
+fn Story(
+    #[prop(into)] story: Signal<String>,
+    #[prop(into)] learning_language: String,
+) -> impl IntoView {
     let (hovered_word, set_hovered_word) = signal(None::<String>);
     let (translation, set_translation) = signal(None::<String>);
     let (tooltip_pos, set_tooltip_pos) = signal((0.0, 0.0));
@@ -234,7 +254,7 @@ fn Story(#[prop(into)] story: Signal<String>) -> impl IntoView {
                                     value=move || selected_translation.get()
                                 />
                                 <input type="hidden" name="answer" value=sentence2 />
-                                <input type="hidden" name="tag" value=LANG />
+                                <input type="hidden" name="tag" value=learning_language.clone() />
                                 <input type="hidden" name="source" value="learning-languages app" />
                                 <button
                                     type="submit"

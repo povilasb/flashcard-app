@@ -8,6 +8,7 @@ use super::db::Database;
 use super::model::NewSentence;
 use crate::db::Database as FlashcardsDb;
 use crate::errors::AppError;
+use crate::settings::Settings;
 
 static GEN_NEW_WORDS_PROMPT: &str = "
 You are bilingual {lang} and English speaker.
@@ -68,15 +69,18 @@ Generate a short story using these words. You don't need to use all the words.
 // AI agent that understands the language we are learning.
 pub struct Agent {
     llm_client: rig::agent::Agent<anthropic::completion::CompletionModel>,
-    lang: String,
+    /// The language that this AI agent is working with.
+    pub lang: String,
 }
 
 impl Agent {
-    /// Initialize an agent with anthropic API key set in the environment:
-    ///     ANTHROPIC_API_KEY=sk-ant-api03-...
-    pub fn new(lang: &str) -> Self {
+    pub fn from_settings() -> Self {
+        let settings = Settings::get();
+        Self::new(&settings.learning_language, &settings.anthropic_api_key)
+    }
+    pub fn new(lang: &str, anthropic_api_key: &str) -> Self {
         Self {
-            llm_client: anthropic::Client::from_env()
+            llm_client: anthropic::Client::new(anthropic_api_key)
                 .agent(anthropic::CLAUDE_4_SONNET)
                 .max_tokens(1000)
                 .build(),
