@@ -4,11 +4,11 @@ use duckdb::Error as DuckdbError;
 use rig::client::CompletionClient;
 use rig::{client::ProviderClient, completion::Prompt, providers::anthropic};
 
-use super::db::Database;
 use super::model::NewSentence;
 use crate::db::Database as FlashcardsDb;
 use crate::errors::AppError;
 use crate::settings::Settings;
+use crate::words_db;
 
 static GEN_NEW_WORDS_PROMPT: &str = "
 You are bilingual {lang} and English speaker.
@@ -89,10 +89,7 @@ impl Agent {
     }
 
     pub async fn gen_new_sentence(&self) -> Result<NewSentence, AppError> {
-        let words = {
-            let words_db = Database::get_instance(&self.lang).unwrap().lock().unwrap();
-            words_db.all_words()?
-        };
+        let words = words_db!().all_words()?;
         let prompt = GEN_NEW_WORDS_PROMPT.replace("{lang}", &self.lang).replace(
             "{dict}",
             &words
@@ -124,7 +121,7 @@ impl Agent {
         let response = self.llm_client.prompt(&prompt).await?;
         let words = llm_resp_parse_words(&response);
 
-        let words_db = Database::get_instance(&self.lang).unwrap().lock().unwrap();
+        let words_db = words_db!();
         for word in words {
             words_db.add_word(&word, "")?;
         }
@@ -133,10 +130,7 @@ impl Agent {
     }
 
     pub async fn gen_story(&self) -> Result<String, AppError> {
-        let words = {
-            let words_db = Database::get_instance(&self.lang).unwrap().lock().unwrap();
-            words_db.all_words()?
-        };
+        let words = { words_db!().all_words()? };
         let prompt = GEN_STORY_PROMPT.replace("{lang}", &self.lang).replace(
             "{dict}",
             &words
@@ -166,7 +160,7 @@ pub async fn populate_words_db(lang: &str) -> Result<(), AppError> {
     let response = agent.prompt(&prompt).await?;
     let words = llm_resp_parse_words(&response);
 
-    let words_db = Database::get_instance(lang).unwrap().lock().unwrap();
+    let words_db = words_db!();
     for word in words {
         words_db.add_word(&word, "")?;
     }

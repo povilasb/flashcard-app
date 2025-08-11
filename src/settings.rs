@@ -6,6 +6,7 @@ use std::sync::OnceLock;
 pub struct Settings {
     pub anthropic_api_key: String,
     pub learning_language: String,
+    pub db_path: String,
 }
 
 static SETTINGS: OnceLock<Settings> = OnceLock::new();

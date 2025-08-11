@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS words (
 macro_rules! words_db {
     () => {
         crate::languages::db::Database::get_instance(
+            &crate::settings::Settings::get().db_path,
             &crate::settings::Settings::get().learning_language,
         )
         .unwrap()
@@ -34,9 +35,12 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn get_instance(lang: &str) -> Result<&'static Mutex<Database>, DuckdbError> {
+    pub fn get_instance(
+        db_path: &str,
+        lang: &str,
+    ) -> Result<&'static Mutex<Database>, DuckdbError> {
         DATABASE.get_or_try_init(|| {
-            let db = Database::load_or_init(&format!("db/{}.db", lang))?;
+            let db = Database::load_or_init(&format!("{}/{}.db", db_path, lang))?;
             Ok(Mutex::new(db))
         })
     }
