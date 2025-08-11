@@ -32,6 +32,7 @@ async fn translators_translate(text: String) -> Result<Option<String>, AppError>
         "spanish" => "es",
         "french" => "fr",
         "portuguese" => "pt-PT",
+        "german" => "de",
         _ => {
             return Err(AppError::GoogleTranslateError(format!(
                 "Unsupported language: {}",
