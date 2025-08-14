@@ -64,6 +64,7 @@ Here is the words I already know in {lang}:
 </dictionary>
 
 Generate a short story using these words. You don't need to use all the words.
+Ouput only the story, no other text.
 ";
 
 // AI agent that understands the language we are learning.
