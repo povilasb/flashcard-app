@@ -2,6 +2,7 @@
 
 #![cfg(feature = "ssr")]
 
+use crate::settings::Settings;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use duckdb::types::Value;
@@ -54,7 +55,7 @@ pub struct Database {
 impl Database {
     pub fn get_instance() -> Result<&'static Mutex<Database>, anyhow::Error> {
         DATABASE.get_or_try_init(|| {
-            let db = Database::load_or_init("db/flashcards.db")?;
+            let db = Database::load_or_init(&format!("{}/flashcards.db", Settings::get().db_path))?;
             Ok(Mutex::new(db))
         })
     }
