@@ -1,0 +1,51 @@
+name: Build package
+
+on:
+  release:
+    types: [published, created]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    - uses: Swatinem/rust-cache@v2
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v25
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+      
+    - name: Install Leptos CLI
+      run: cargo install --locked cargo-leptos
+      
+    - name: Build application
+      run: ./build.sh
+      
+    - name: Get version from tag
+      id: get_version
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+          # Remove 'v' prefix if present
+          VERSION=${VERSION#v}
+        else
+          VERSION="dev"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Using version: $VERSION"
+      
+    - name: Rename artifact with version
+      run: |
+        mv flashcard-app.tar.gz flashcard-app-v${{ steps.get_version.outputs.version }}-osx.tar.gz
+      
+    - name: Upload release asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./flashcard-app-v${{ steps.get_version.outputs.version }}-osx.tar.gz
+        asset_name: flashcard-app-v${{ steps.get_version.outputs.version }}-osx.tar.gz
+        asset_content_type: application/gzip
