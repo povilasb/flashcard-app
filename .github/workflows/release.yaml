@@ -2,7 +2,11 @@ name: Build package
 
 on:
   release:
-    types: [published, created]
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -17,8 +21,10 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixos-unstable
       
-    - name: Install Leptos CLI
-      run: cargo install --locked cargo-leptos
+    - uses: cargo-bins/cargo-binstall@v1.14.4
+
+    - name: Install Cargo Leptos
+      run: cargo binstall cargo-leptos@v0.2.42 --locked --no-confirm
       
     - name: Build application
       run: ./build.sh
@@ -41,11 +47,6 @@ jobs:
         mv flashcard-app.tar.gz flashcard-app-v${{ steps.get_version.outputs.version }}-osx.tar.gz
       
     - name: Upload release asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./flashcard-app-v${{ steps.get_version.outputs.version }}-osx.tar.gz
-        asset_name: flashcard-app-v${{ steps.get_version.outputs.version }}-osx.tar.gz
-        asset_content_type: application/gzip
+        files: flashcard-app-v${{ steps.get_version.outputs.version }}-osx.tar.gz
