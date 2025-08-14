@@ -27,7 +27,7 @@ jobs:
       run: cargo binstall cargo-leptos@0.2.42 --locked --no-confirm
       
     - name: Build application
-      run: ./build.sh
+      run: nix-shell --run "./build.sh"
       
     - name: Get version from tag
       id: get_version
