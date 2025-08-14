@@ -5,13 +5,15 @@ async fn main() {
     use axum::http::HeaderValue;
     use axum::response::Response;
     use axum::Router;
+    use colog;
     use flashcard_app::app::*;
     use flashcard_app::settings::Settings;
-    use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
+    use log::info;
     use tower_http::services::ServeDir;
 
+    colog::init();
     Settings::load().expect("Failed to load settings");
 
     let conf = get_configuration(None).unwrap();
@@ -46,7 +48,7 @@ async fn main() {
 
     // run our app with hyper
     // `axum::Server` is a re-export of `hyper::Server`
-    log!("listening on http://{}", &addr);
+    info!("listening on http://{}", &addr);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app.into_make_service())
         .await
