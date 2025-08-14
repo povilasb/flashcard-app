@@ -24,7 +24,7 @@ jobs:
     - uses: cargo-bins/cargo-binstall@v1.14.4
 
     - name: Install Cargo Leptos
-      run: cargo binstall cargo-leptos@v0.2.42 --locked --no-confirm
+      run: cargo binstall cargo-leptos@0.2.42 --locked --no-confirm
       
     - name: Build application
       run: ./build.sh
