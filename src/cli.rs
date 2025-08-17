@@ -1,10 +1,7 @@
 //! Usage:
 //! cargo run --bin=cli --features=ssr
 
-mod db;
-mod model;
-
-use crate::db::Database;
+use flashcard_app::db::Database;
 use std::env;
 use std::error::Error;
 use std::io;
