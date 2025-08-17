@@ -34,7 +34,7 @@ pub fn GenerateSentence() -> impl IntoView {
             }
         }
     });
-    let generating = gen_sentence.input();
+    let generating = gen_sentence.pending();
 
     view! {
         <div class="mb-4 mt-12 text-center">
@@ -51,7 +51,7 @@ pub fn GenerateSentence() -> impl IntoView {
             Generate Sentence
         </button>
         {move || {
-            if generating.get().is_some() {
+            if generating.get() {
                 view! { <Spinner /> }.into_any()
             } else {
                 "".into_view().into_any()
