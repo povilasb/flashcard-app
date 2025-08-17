@@ -1,11 +1,12 @@
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 
+use crate::components::ShowError;
 use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
 use crate::languages::model::NewSentence;
 use crate::settings::Language;
+use thaw::Spinner;
 
 #[server(GenerateSentence, "/api")]
 async fn generate_sentence() -> Result<(NewSentence, Language), AppError> {
@@ -17,8 +18,23 @@ async fn generate_sentence() -> Result<(NewSentence, Language), AppError> {
 /// Using LLMs, generate a new sentence with a new word and its translation for iterative language learning.
 #[component]
 pub fn GenerateSentence() -> impl IntoView {
+    let show_error = ShowError::from_ctx();
+
     let new_sentence = RwSignal::new(None);
     let flashcard_tag = RwSignal::new("".to_string());
+
+    let gen_sentence = Action::new(move |_input: &()| async move {
+        match generate_sentence().await {
+            Err(e) => {
+                show_error.show(format!("{:?}", e));
+            }
+            Ok((sentence, language)) => {
+                new_sentence.set(Some(sentence));
+                flashcard_tag.set(language.as_str().to_string());
+            }
+        }
+    });
+    let generating = gen_sentence.input();
 
     view! {
         <div class="mb-4 mt-12 text-center">
@@ -28,24 +44,19 @@ pub fn GenerateSentence() -> impl IntoView {
         </div>
         <button
             class="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer"
-            on:click=move |_| {
-                spawn_local(async move {
-                    match generate_sentence().await {
-                        Ok((sentence, language)) => {
-                            new_sentence.set(Some(sentence));
-                            flashcard_tag.set(language.as_str().to_string());
-                        }
-                        Err(e) => {
-                            web_sys::console::error_1(
-                                &format!("Error generating sentence: {}", e).into(),
-                            );
-                        }
-                    }
-                });
+            on:click=move |_event| {
+                gen_sentence.dispatch(());
             }
         >
             Generate Sentence
         </button>
+        {move || {
+            if generating.get().is_some() {
+                view! { <Spinner /> }.into_any()
+            } else {
+                "".into_view().into_any()
+            }
+        }}
 
         <div class="mt-4">
             <table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden shadow-sm">
