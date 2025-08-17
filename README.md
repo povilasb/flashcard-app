@@ -6,9 +6,8 @@ The less we forget.
 ## Usage
 
 ```sh
+cargo leptos build
 cargo run --bin=cli
-cargo run --bin=web
-cargo watch -x 'run --bin=web'
 ```
 
 ## Why?
