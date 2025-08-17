@@ -16,6 +16,9 @@ jobs:
     - uses: actions/checkout@v4
     - uses: Swatinem/rust-cache@v2
 
+    - name: Install wasm32 target
+      run: rustup target add wasm32-unknown-unknown
+
     - name: Install Nix
       uses: cachix/install-nix-action@v25
       with:
