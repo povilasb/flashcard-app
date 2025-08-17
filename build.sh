@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 cargo leptos build --release
 
 mkdir -p temp_package/target
