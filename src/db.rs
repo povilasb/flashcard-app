@@ -17,7 +17,7 @@ use crate::model::{Flashcard, ReviewHistory};
 /// * duckdb-rs doesn't support arrays, so tags are stored in a separate table.
 ///   * https://github.com/duckdb/duckdb-rs/issues/338
 static INIT_TABLES_SQL: &str = "
-    CREATE SEQUENCE seq_flashcards;
+    CREATE SEQUENCE IF NOT EXISTS seq_flashcards;
     CREATE TABLE IF NOT EXISTS flashcards (
         id INTEGER PRIMARY KEY DEFAULT NEXTVAL('seq_flashcards'),
         question TEXT,
