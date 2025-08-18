@@ -6,9 +6,6 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[target.x86_64-apple-darwin]
-rustflags = ["-C", "target-feature=+crt-static"]
-
 [dependencies]
 leptos = { version = "0.8.6" }
 leptos_router = { version = "0.8.5" }
