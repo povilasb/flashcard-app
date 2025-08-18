@@ -7,4 +7,9 @@ pkgs.mkShell {
     openssl
     pkg-config
   ];
+
+  nativeBuildInputs = [
+    pkgs.clang
+    pkgs.libcxxStdenv
+  ];
 }
