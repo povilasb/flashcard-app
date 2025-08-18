@@ -6,8 +6,9 @@ The less we forget.
 ## Usage
 
 ```sh
-cargo leptos build
-cargo run --bin=cli
+brew install duckdb
+cargo install cargo-leptos
+cargo leptos watch
 ```
 
 ## Why?
