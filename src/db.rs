@@ -141,7 +141,8 @@ impl Database {
     pub fn fail(&self, card_id: i64) -> Result<(), Box<dyn Error>> {
         self.conn.execute("BEGIN TRANSACTION", params![])?;
         // Don't prompt to review immediately.
-        self.conn.execute("UPDATE flashcards SET last_reviewed = CURRENT_TIMESTAMP, review_after_secs = 3600 WHERE id = ?", params![card_id])?;
+        // Review no earlier than after 6 hours.
+        self.conn.execute("UPDATE flashcards SET last_reviewed = CURRENT_TIMESTAMP, review_after_secs = 21600 WHERE id = ?", params![card_id])?;
         self.conn.execute("INSERT INTO review_history (flashcard_id, review_date, remembered) VALUES (?, CURRENT_TIMESTAMP, FALSE)", params![card_id])?;
         self.conn.execute("COMMIT", params![])?;
         Ok(())
