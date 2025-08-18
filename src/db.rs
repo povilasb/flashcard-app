@@ -208,6 +208,22 @@ impl Database {
         Ok(rows.collect::<Result<Vec<_>, _>>()?)
     }
 
+    /// How many times on average a single card was reviewed per month.
+    pub fn avg_reviews_per_month(&self) -> Result<f64, DuckdbError> {
+        let query = "
+        SELECT avg(reviews) FROM (
+            SELECT
+                flashcard_id,
+                strftime('%Y-%m', review_date) as year_month,
+                count(*) as reviews
+            FROM review_history
+            GROUP BY flashcard_id, year_month
+        )";
+        let mut stmt = self.conn.prepare(query)?;
+        let avg: f64 = stmt.query_row([], |row| row.get(0))?;
+        Ok(avg)
+    }
+
     /// Helper function to construct a Flashcard from a database row
     fn flashcard_from_row(&self, row: &duckdb::Row) -> Result<Flashcard, duckdb::Error> {
         Ok(Flashcard {
