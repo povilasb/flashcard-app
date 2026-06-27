@@ -26,7 +26,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/api/cards", post(cards::create_card))
-        .route("/api/cards/{id}", get(cards::get_card))
+        .route("/api/cards/{id}", get(cards::get_card).delete(cards::delete_card))
         .nest_service("/media", ServeDir::new("db/media"))
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();

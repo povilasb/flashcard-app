@@ -197,6 +197,18 @@ impl Database {
         Ok(())
     }
 
+    pub fn delete_card(&self, id: i64) -> Result<(), Box<dyn Error>> {
+        self.conn.execute(
+            "DELETE FROM flashcard_tags WHERE flashcard_id = ?",
+            params![id],
+        )?;
+        self.conn.execute(
+            "DELETE FROM flashcards WHERE id = ?",
+            params![id],
+        )?;
+        Ok(())
+    }
+
     pub fn review_history(&self) -> Result<Vec<ReviewHistory>, anyhow::Error> {
         let mut stmt = self.conn.prepare("SELECT * FROM review_history")?;
         let rows = stmt.query_map([], |row| {

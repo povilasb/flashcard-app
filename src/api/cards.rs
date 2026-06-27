@@ -14,6 +14,14 @@ pub async fn get_card(Path(id): Path<i64>) -> impl IntoResponse {
     }
 }
 
+pub async fn delete_card(Path(id): Path<i64>) -> impl IntoResponse {
+    let db = Database::get_instance().unwrap().lock().unwrap();
+    match db.delete_card(id) {
+        Ok(_) => StatusCode::NO_CONTENT.into_response(),
+        Err(_) => StatusCode::NOT_FOUND.into_response(),
+    }
+}
+
 pub async fn create_card(Json(req): Json<CreateCardRequest>) -> impl IntoResponse {
     let db = Database::get_instance().unwrap().lock().unwrap();
 

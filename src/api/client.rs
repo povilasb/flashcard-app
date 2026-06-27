@@ -22,3 +22,11 @@ pub async fn create_card(req: &CreateCardRequest) -> Result<(), gloo_net::Error>
         .await
         .map(|_| ())
 }
+
+#[cfg(not(feature = "ssr"))]
+pub async fn delete_card(id: i64) -> Result<(), gloo_net::Error> {
+    Request::delete(&format!("/api/cards/{id}"))
+        .send()
+        .await
+        .map(|_| ())
+}
