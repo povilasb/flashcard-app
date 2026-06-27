@@ -104,7 +104,7 @@ tailwind-input-file = "style/tailwind.css"
 # Optional. Env: LEPTOS_ASSETS_DIR.
 assets-dir = "public"
 
-site-addr = "127.0.0.1:3000"
+site-addr = "127.0.0.1:7001"
 
 # The port to use for automatic reload monitoring
 reload-port = 3001
