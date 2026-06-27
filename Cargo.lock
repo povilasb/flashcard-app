@@ -1320,6 +1320,7 @@ dependencies = [
  "console_error_panic_hook",
  "dirs",
  "duckdb",
+ "gloo-net",
  "gloo-timers",
  "leptos",
  "leptos_axum",
