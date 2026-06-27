@@ -14,7 +14,7 @@ leptos_meta = { version = "0.8.5" }
 axum = { version = "0.8", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
-wasm-bindgen = { version = "=0.2.100", optional = true }
+wasm-bindgen = { version = "=0.2.104", optional = true }
 web-sys = { version = "0.3", features = [
     "FileList",
     "FormData",
@@ -63,7 +63,12 @@ name = "lang"
 path = "src/languages/cli.rs"
 
 [features]
-hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen", "dep:gloo-net"]
+hydrate = [
+    "leptos/hydrate",
+    "dep:console_error_panic_hook",
+    "dep:wasm-bindgen",
+    "dep:gloo-net",
+]
 ssr = [
     "dep:axum",
     "dep:tokio",
