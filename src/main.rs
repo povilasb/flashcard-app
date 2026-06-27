@@ -4,8 +4,10 @@ async fn main() {
     use axum::http::header::{CACHE_CONTROL, EXPIRES, PRAGMA};
     use axum::http::HeaderValue;
     use axum::response::Response;
+    use axum::routing::{get, post};
     use axum::Router;
     use colog;
+    use flashcard_app::api::cards;
     use flashcard_app::app::*;
     use flashcard_app::settings::Settings;
     use leptos::prelude::*;
@@ -23,6 +25,8 @@ async fn main() {
     let routes = generate_route_list(App);
 
     let app = Router::new()
+        .route("/api/cards", post(cards::create_card))
+        .route("/api/cards/{id}", get(cards::get_card))
         .nest_service("/media", ServeDir::new("db/media"))
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();

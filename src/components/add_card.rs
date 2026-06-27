@@ -1,35 +1,16 @@
 use gloo_timers::callback::Timeout;
 use leptos::prelude::*;
+use leptos::task::spawn_local;
 use leptos::*;
 use leptos_router::{hooks::use_query, params::Params};
 
-#[cfg(feature = "ssr")]
-use crate::db::Database;
 use crate::model::Flashcard;
 use leptos::wasm_bindgen::JsCast;
 
-#[server(SubmitCard, "/api")]
-pub async fn submit_card(
-    question: String,
-    answer: String,
-    examples: String,
-    source: Option<String>,
-    tags: String,
-    answer_img_fname: Option<String>,
-    question_img_fname: Option<String>,
-) -> Result<(), ServerFnError> {
-    let db = Database::get_instance().unwrap().lock().unwrap();
-
-    let mut card = Flashcard::new(question, answer);
-    card.examples = Some(examples);
-    card.source = source;
-    card.tags = tags.split(',').map(|s| s.trim().to_string()).collect();
-    card.img = answer_img_fname;
-    card.question_img = question_img_fname;
-
-    db.add_card(&card)
-        .map_err(|e| ServerFnError::new(e.to_string()))
-}
+#[cfg(not(feature = "ssr"))]
+use crate::api::client::create_card;
+#[cfg(not(feature = "ssr"))]
+use crate::api::CreateCardRequest;
 
 /// Reused to add or edit a card.
 #[component]
@@ -152,25 +133,54 @@ pub fn AddCard() -> impl IntoView {
         card.tags = vec![tag];
     }
 
-    let submit = ServerAction::<SubmitCard>::new();
     let form_ref = NodeRef::<leptos::html::Form>::new();
     let show_ack = RwSignal::new(false);
 
-    // Watch for successful form submission.
-    Effect::new(move |_| {
-        if let Some(Ok(_)) = submit.value().get() {
-            show_ack.set(true);
-            if let Some(form) = form_ref.get() {
-                form.reset();
-            }
-            Timeout::new(3000, move || show_ack.set(false)).forget();
+    let on_submit = move |ev: leptos::ev::SubmitEvent| {
+        ev.prevent_default();
+        let Some(form) = form_ref.get() else { return };
+        let form_el = form.unchecked_ref::<web_sys::HtmlFormElement>();
+        let Ok(form_data) = web_sys::FormData::new_with_form(form_el) else { return };
+
+        let get = |name: &str| form_data.get(name).as_string().unwrap_or_default();
+        let get_opt = |name: &str| form_data.get(name).as_string().filter(|s| !s.is_empty());
+
+        let tags_str = get("tags");
+        let tags = tags_str
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>();
+
+        #[cfg(not(feature = "ssr"))]
+        {
+            let req = CreateCardRequest {
+                question: get("question"),
+                answer: get("answer"),
+                examples: get_opt("examples"),
+                source: get_opt("source"),
+                tags,
+                answer_img_fname: get_opt("answer_img_fname"),
+                question_img_fname: get_opt("question_img_fname"),
+            };
+
+            spawn_local(async move {
+                match create_card(&req).await {
+                    Ok(_) => {
+                        show_ack.set(true);
+                        form.reset();
+                        Timeout::new(3000, move || show_ack.set(false)).forget();
+                    }
+                    Err(e) => web_sys::console::error_1(&e.to_string().into()),
+                }
+            });
         }
-    });
+    };
 
     view! {
         <div class="max-w-[600px] mx-auto my-8 p-4">
             <div class="flex flex-col gap-4 w-full max-w-md bg-white p-8 rounded shadow">
-                <ActionForm action=submit node_ref=form_ref>
+                <form node_ref=form_ref on:submit=on_submit>
                     <h2 class="text-2xl font-bold mb-4">{"Add a new card"}</h2>
                     <FlashcardForm card=card />
                     <button
@@ -179,7 +189,7 @@ pub fn AddCard() -> impl IntoView {
                     >
                         {"Create Flashcard"}
                     </button>
-                </ActionForm>
+                </form>
                 <Show when=move || show_ack.get()>
                     <div class="text-green-600 font-semibold mt-2">
                         {"Card added successfully!"}

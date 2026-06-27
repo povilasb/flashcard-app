@@ -1,6 +1,7 @@
 #![recursion_limit = "256"]
 
 pub mod app;
+pub mod api;
 mod components;
 pub mod db;
 mod errors;

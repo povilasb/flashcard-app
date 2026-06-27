@@ -1,4 +1,3 @@
-use crate::components::edit_card::get_card;
 use crate::components::flashcard::Flashcard;
 use crate::model;
 use leptos::prelude::*;
@@ -6,6 +5,9 @@ use leptos::task::spawn_local;
 use leptos::*;
 use leptos_router::hooks::use_params;
 use leptos_router::params::Params;
+
+#[cfg(not(feature = "ssr"))]
+use crate::api::client::fetch_card;
 
 #[derive(Params, PartialEq, Clone)]
 struct ViewCardParams {
@@ -29,10 +31,10 @@ pub fn ViewCard() -> impl IntoView {
     // Load card data
     Effect::new(move |_| {
         spawn_local(async move {
-            if let Ok(fetched_card) = get_card(id()).await {
-                set_card.set(Some(fetched_card));
-            } else {
-                web_sys::console::error_1(&"Failed to fetch card".into());
+            #[cfg(not(feature = "ssr"))]
+            match fetch_card(id()).await {
+                Ok(card) => set_card.set(Some(card)),
+                Err(e) => web_sys::console::error_1(&e.to_string().into()),
             }
         });
     });

@@ -1,3 +1,5 @@
+#[cfg(not(feature = "ssr"))]
+use crate::api::client::fetch_card;
 use crate::components::add_card::FlashcardForm;
 #[cfg(feature = "ssr")]
 use crate::db::Database;
@@ -8,13 +10,6 @@ use leptos::task::spawn_local;
 use leptos::*;
 use leptos_router::hooks::use_params;
 use leptos_router::params::Params;
-
-#[server(GetCard, "/api")]
-pub async fn get_card(id: i64) -> Result<Flashcard, ServerFnError> {
-    let db = Database::get_instance().unwrap().lock().unwrap();
-    db.get_card(id)
-        .map_err(|e| ServerFnError::new(e.to_string()))
-}
 
 #[server(UpdateCard, "/api")]
 async fn update_card(
@@ -71,10 +66,10 @@ pub fn EditCard() -> impl IntoView {
     // Load card data
     Effect::new(move |_| {
         spawn_local(async move {
-            if let Ok(fetched_card) = get_card(id()).await {
-                set_card.set(Some(fetched_card));
-            } else {
-                web_sys::console::error_1(&"Failed to fetch card".into());
+            #[cfg(not(feature = "ssr"))]
+            match fetch_card(id()).await {
+                Ok(card) => set_card.set(Some(card)),
+                Err(e) => web_sys::console::error_1(&e.to_string().into()),
             }
         });
     });
