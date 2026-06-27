@@ -15,7 +15,15 @@ axum = { version = "0.8", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 wasm-bindgen = { version = "=0.2.100", optional = true }
-web-sys = { version = "0.3", features = ["FileList", "HtmlInputElement", "File", "Element", "DomRect", "Selection", "Window"] }
+web-sys = { version = "0.3", features = [
+    "FileList",
+    "HtmlInputElement",
+    "File",
+    "Element",
+    "DomRect",
+    "Selection",
+    "Window",
+] }
 serde = { version = "1.0.219", features = ["derive"] }
 toml = "0.8.12"
 config = "0.15.13"
@@ -29,7 +37,10 @@ comrak = "0.39.0"
 syntect = { version = "5.2.0", default-features = false, features = [] }
 rig-core = { version = "0.17.1", optional = true }
 server_fn = "0.8.2"
-translators = { version = "0.1", optional = true, features = ["tokio-async", "google"] }
+translators = { version = "0.1", optional = true, features = [
+    "tokio-async",
+    "google",
+] }
 thaw = { git = "https://github.com/thaw-ui/thaw", branch = "thaw/v0.5" }
 mathemascii = "0.4.0"
 dirs = { version = "6.0.0", optional = true }
@@ -49,11 +60,7 @@ name = "lang"
 path = "src/languages/cli.rs"
 
 [features]
-hydrate = [
-    "leptos/hydrate",
-    "dep:console_error_panic_hook",
-    "dep:wasm-bindgen",
-]
+hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
 ssr = [
     "dep:axum",
     "dep:tokio",
@@ -138,4 +145,3 @@ lib-default-features = false
 #
 # Optional. Defaults to "release".
 lib-profile-release = "wasm-release"
-
