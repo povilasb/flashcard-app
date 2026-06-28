@@ -9,7 +9,7 @@ use std::io;
 static DB_DIR: &str = "db";
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let db = Database::load_or_init("db/flashcards.db")?;
+    let mut db = Database::load_or_init("db/flashcards.db")?;
     let media_dir = env::current_dir()?.join(DB_DIR).join("media");
 
     for card in db.cards_to_review()? {

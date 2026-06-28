@@ -3,13 +3,12 @@
 pkgs.mkShell {
   buildInputs = with pkgs; [
     nodejs
-    duckdb
+    sqlite
     openssl
     pkg-config
   ];
 
   nativeBuildInputs = [
     pkgs.clang
-    pkgs.libcxxStdenv
   ];
 }

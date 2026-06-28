@@ -22,7 +22,7 @@ async fn update_card(
     question_img_fname: Option<String>,
     answer_img_fname: Option<String>,
 ) -> Result<(), ServerFnError> {
-    let db = Database::get_instance().unwrap().lock().unwrap();
+    let mut db = Database::get_instance().unwrap().lock().unwrap();
 
     let mut card = Flashcard::new(question, answer);
     card.id = id;

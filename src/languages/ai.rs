@@ -1,7 +1,7 @@
 #![cfg(feature = "ssr")]
 
-use duckdb::Error as DuckdbError;
 use rig::client::CompletionClient;
+use rusqlite;
 use rig::{client::ProviderClient, completion::Prompt, providers::anthropic};
 
 use super::model::NewSentence;
@@ -173,7 +173,7 @@ pub async fn populate_words_db(lang: &str) -> Result<(), AppError> {
     Ok(())
 }
 
-fn get_all_sentences(lang: &str) -> Result<String, DuckdbError> {
+fn get_all_sentences(lang: &str) -> rusqlite::Result<String> {
     let flashcards_db = FlashcardsDb::get_instance().unwrap().lock().unwrap();
     let cards = flashcards_db.all_cards(Some(lang.to_string()))?;
     Ok(cards
