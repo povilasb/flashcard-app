@@ -1,11 +1,11 @@
 //! API Web client.
 
-#[cfg(not(feature = "ssr"))]
+#[cfg(feature = "hydrate")]
 use gloo_net::http::Request;
 
 use crate::{api::CreateCardRequest, model::Flashcard};
 
-#[cfg(not(feature = "ssr"))]
+#[cfg(feature = "hydrate")]
 pub async fn fetch_card(id: i64) -> Result<Flashcard, gloo_net::Error> {
     Request::get(&format!("/api/cards/{id}"))
         .send()
@@ -14,7 +14,7 @@ pub async fn fetch_card(id: i64) -> Result<Flashcard, gloo_net::Error> {
         .await
 }
 
-#[cfg(not(feature = "ssr"))]
+#[cfg(feature = "hydrate")]
 pub async fn create_card(req: &CreateCardRequest) -> Result<(), gloo_net::Error> {
     Request::post("/api/cards")
         .json(req)?
@@ -23,7 +23,7 @@ pub async fn create_card(req: &CreateCardRequest) -> Result<(), gloo_net::Error>
         .map(|_| ())
 }
 
-#[cfg(not(feature = "ssr"))]
+#[cfg(feature = "hydrate")]
 pub async fn delete_card(id: i64) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("/api/cards/{id}"))
         .send()

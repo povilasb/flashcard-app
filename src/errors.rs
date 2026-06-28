@@ -1,7 +1,7 @@
 use std::fmt;
 
 #[cfg(feature = "ssr")]
-use duckdb::Error as DuckdbError;
+use rusqlite::Error as SqliteError;
 use leptos::prelude::*;
 #[cfg(feature = "ssr")]
 use rig::completion::PromptError;
@@ -12,7 +12,7 @@ use translators;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum AppError {
-    DuckdbError(String),
+    SqliteError(String),
     ServerFnError(ServerFnErrorErr),
     LlmError(String),
     GoogleTranslateError(String),
@@ -21,7 +21,7 @@ pub enum AppError {
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AppError::DuckdbError(e) => write!(f, "{}", e),
+            AppError::SqliteError(e) => write!(f, "{}", e),
             AppError::ServerFnError(e) => write!(f, "{}", e),
             AppError::LlmError(e) => write!(f, "{}", e),
             AppError::GoogleTranslateError(e) => write!(f, "{}", e),
@@ -30,9 +30,9 @@ impl fmt::Display for AppError {
 }
 
 #[cfg(feature = "ssr")]
-impl From<DuckdbError> for AppError {
-    fn from(e: DuckdbError) -> Self {
-        AppError::DuckdbError(e.to_string())
+impl From<SqliteError> for AppError {
+    fn from(e: SqliteError) -> Self {
+        AppError::SqliteError(e.to_string())
     }
 }
 

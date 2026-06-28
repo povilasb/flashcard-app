@@ -15,7 +15,7 @@ async fn get_cards() -> Result<Vec<model::Flashcard>, ServerFnError> {
 
 #[server(SubmitAnswer, "/api")]
 pub async fn submit_answer(card_id: i64, remembered: bool) -> Result<(), ServerFnError> {
-    let db = Database::get_instance().unwrap().lock().unwrap();
+    let mut db = Database::get_instance().unwrap().lock().unwrap();
 
     if remembered {
         db.ok(card_id)

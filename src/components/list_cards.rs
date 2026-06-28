@@ -1,6 +1,6 @@
 #[cfg(feature = "ssr")]
 use crate::db::Database;
-#[cfg(not(feature = "ssr"))]
+#[cfg(feature = "hydrate")]
 use crate::api::client::delete_card;
 use crate::model::Flashcard;
 use leptos::prelude::*;
@@ -33,7 +33,7 @@ pub fn ListCards() -> impl IntoView {
 
     let on_delete = move |id: i64| {
         spawn_local(async move {
-            #[cfg(not(feature = "ssr"))]
+            #[cfg(feature = "hydrate")]
             match delete_card(id).await {
                 Ok(_) => set_cards.update(|cs| cs.retain(|c| c.id != id)),
                 Err(e) => web_sys::console::error_1(&e.to_string().into()),

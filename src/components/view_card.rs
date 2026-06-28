@@ -6,7 +6,7 @@ use leptos::*;
 use leptos_router::hooks::use_params;
 use leptos_router::params::Params;
 
-#[cfg(not(feature = "ssr"))]
+#[cfg(feature = "hydrate")]
 use crate::api::client::fetch_card;
 
 #[derive(Params, PartialEq, Clone)]
@@ -31,7 +31,7 @@ pub fn ViewCard() -> impl IntoView {
     // Load card data
     Effect::new(move |_| {
         spawn_local(async move {
-            #[cfg(not(feature = "ssr"))]
+            #[cfg(feature = "hydrate")]
             match fetch_card(id()).await {
                 Ok(card) => set_card.set(Some(card)),
                 Err(e) => web_sys::console::error_1(&e.to_string().into()),

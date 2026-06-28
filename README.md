@@ -6,7 +6,6 @@ The less we forget.
 ## Usage
 
 ```sh
-brew install duckdb
 cargo install cargo-leptos
 cargo leptos watch
 ```
@@ -19,7 +18,7 @@ cargo leptos watch
 
 ## Caveats
 
-* An image can be loaded only from `./db/media`. 
+* An image can be loaded only from `./db/media`.
 
 ## Architecture
 

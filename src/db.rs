@@ -1,48 +1,42 @@
-//! duckdb-based database for flashcards.
+//! SQLite-based database for flashcards.
 
 #![cfg(feature = "ssr")]
 
+use crate::model::{Flashcard, ReviewHistory};
 use crate::settings::Settings;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use duckdb::types::Value;
-use duckdb::{params, Connection, Error as DuckdbError};
 use once_cell::sync::OnceCell;
+use rusqlite::{params, Connection};
 use std::error::Error;
 use std::sync::Mutex;
 
-use crate::model::{Flashcard, ReviewHistory};
-
-/// NOTES:
-/// * duckdb-rs doesn't support arrays, so tags are stored in a separate table.
-///   * https://github.com/duckdb/duckdb-rs/issues/338
 static INIT_TABLES_SQL: &str = "
-    CREATE SEQUENCE IF NOT EXISTS seq_flashcards;
     CREATE TABLE IF NOT EXISTS flashcards (
-        id INTEGER PRIMARY KEY DEFAULT NEXTVAL('seq_flashcards'),
+        id INTEGER PRIMARY KEY,
         question TEXT,
         answer TEXT,
         examples TEXT,
         source TEXT,
         img TEXT,
-        last_reviewed TIMESTAMP,
+        last_reviewed INTEGER,
         review_after_secs INTEGER,
-        question_img TEXT,
+        question_img TEXT
     );
 
     CREATE TABLE IF NOT EXISTS flashcard_tags (
         flashcard_id INTEGER,
         tag TEXT,
         PRIMARY KEY (flashcard_id, tag),
-        FOREIGN KEY (flashcard_id) REFERENCES flashcards(id),
+        FOREIGN KEY (flashcard_id) REFERENCES flashcards(id)
     );
 
     CREATE TABLE IF NOT EXISTS review_history (
         flashcard_id INTEGER,
-        review_date TIMESTAMP,
+        review_date INTEGER,
         remembered BOOLEAN,
         PRIMARY KEY (flashcard_id, review_date),
-        FOREIGN KEY (flashcard_id) REFERENCES flashcards(id),
+        FOREIGN KEY (flashcard_id) REFERENCES flashcards(id)
     );
 ";
 
@@ -67,21 +61,17 @@ impl Database {
         Ok(Self { conn })
     }
 
-    // Load existing db or create a new one if it doesn't exist.
     pub fn load_or_init(fname: &str) -> Result<Self, anyhow::Error> {
         let conn = Connection::open(fname)?;
         conn.execute_batch(INIT_TABLES_SQL)?;
         Ok(Self { conn })
     }
 
-    pub fn add_card(&self, card: &Flashcard) -> Result<(), anyhow::Error> {
-        self.conn.execute("BEGIN TRANSACTION", params![])?;
-
-        let mut stmt = self.conn.prepare(
-            "INSERT INTO flashcards (question, answer, examples, source, img, question_img, last_reviewed, review_after_secs) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"
-        )?;
-        let flashcard_id: i64 = stmt.query_row(
+    pub fn add_card(&mut self, card: &Flashcard) -> Result<(), anyhow::Error> {
+        let tx = self.conn.transaction()?;
+        let flashcard_id: i64 = tx.query_row(
+            "INSERT INTO flashcards (question, answer, examples, source, img, question_img, last_reviewed, review_after_secs)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8) RETURNING id",
             params![
                 card.question,
                 card.answer,
@@ -89,85 +79,92 @@ impl Database {
                 card.source,
                 card.img,
                 card.question_img,
-                card.last_reviewed.to_rfc3339(),
+                card.last_reviewed.timestamp(),
                 card.review_after_secs,
             ],
             |row| row.get(0),
         )?;
-
-        for tag in card.tags.iter() {
-            self.conn.execute(
-                "INSERT INTO flashcard_tags (flashcard_id, tag) VALUES (?, ?)",
+        for tag in &card.tags {
+            tx.execute(
+                "INSERT INTO flashcard_tags (flashcard_id, tag) VALUES (?1, ?2)",
                 params![flashcard_id, tag],
             )?;
         }
-
-        self.conn.execute("COMMIT", params![])?;
+        tx.commit()?;
         Ok(())
     }
 
-    pub fn all_cards(&self, tag: Option<String>) -> Result<Vec<Flashcard>, DuckdbError> {
-        let mut query = "SELECT f.*, group_concat(ft.tag) from flashcards f 
-            join flashcard_tags ft on f.id = ft.flashcard_id"
-            .to_string();
-        if let Some(tag) = tag {
-            query += &format!(" WHERE ft.tag = '{}'", tag);
-        }
-        query += " GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs, f.question_img";
+    pub fn all_cards(&self, tag: Option<String>) -> rusqlite::Result<Vec<Flashcard>> {
+        let group_by = "GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.last_reviewed, f.review_after_secs, f.question_img";
+        let from = "SELECT f.*, group_concat(ft.tag) FROM flashcards f
+            LEFT JOIN flashcard_tags ft ON f.id = ft.flashcard_id";
 
-        let mut stmt = self.conn.prepare(&query)?;
-        let rows = stmt.query_map([], |row| self.flashcard_from_row(row))?;
-        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+        let sql = match &tag {
+            Some(_) => format!("{from} WHERE ft.tag = ?1 {group_by}"),
+            None => format!("{from} {group_by}"),
+        };
+        let mut stmt = self.conn.prepare(&sql)?;
+        match tag {
+            Some(t) => stmt.query_map([t], flashcard_from_row)?.collect(),
+            None => stmt.query_map([], flashcard_from_row)?.collect(),
+        }
     }
 
     pub fn cards_to_review(&self) -> Result<Vec<Flashcard>, anyhow::Error> {
         let mut stmt = self.conn.prepare(
-            "SELECT f.*, group_concat(ft.tag) from flashcards f 
-            join flashcard_tags ft on f.id = ft.flashcard_id 
-            WHERE last_reviewed + INTERVAL(review_after_secs) SECOND < CURRENT_TIMESTAMP
-            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs")?;
-        let rows = stmt.query_map([], |row| self.flashcard_from_row(row))?;
-        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+            "SELECT f.*, group_concat(ft.tag) FROM flashcards f
+            LEFT JOIN flashcard_tags ft ON f.id = ft.flashcard_id
+            WHERE f.last_reviewed + f.review_after_secs < unixepoch('now')
+            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs",
+        )?;
+        let rows = stmt.query_map([], flashcard_from_row)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
-    pub fn ok(&self, card_id: i64) -> Result<(), Box<dyn Error>> {
-        self.conn.execute("BEGIN TRANSACTION", params![])?;
-        self.conn.execute("UPDATE flashcards SET last_reviewed = CURRENT_TIMESTAMP, review_after_secs = review_after_secs * 2 WHERE id = ?", params![card_id])?;
-        self.conn.execute("INSERT INTO review_history (flashcard_id, review_date, remembered) VALUES (?, CURRENT_TIMESTAMP, TRUE)", params![card_id])?;
-        self.conn.execute("COMMIT", params![])?;
+    pub fn ok(&mut self, card_id: i64) -> Result<(), Box<dyn Error>> {
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "UPDATE flashcards SET last_reviewed = unixepoch('now'), review_after_secs = review_after_secs * 2 WHERE id = ?1",
+            params![card_id],
+        )?;
+        tx.execute(
+            "INSERT INTO review_history (flashcard_id, review_date, remembered) VALUES (?1, unixepoch('now'), TRUE)",
+            params![card_id],
+        )?;
+        tx.commit()?;
         Ok(())
     }
 
-    pub fn fail(&self, card_id: i64) -> Result<(), Box<dyn Error>> {
-        self.conn.execute("BEGIN TRANSACTION", params![])?;
+    pub fn fail(&mut self, card_id: i64) -> Result<(), Box<dyn Error>> {
+        let tx = self.conn.transaction()?;
         // Don't prompt to review immediately.
         // Review no earlier than after 6 hours.
-        self.conn.execute("UPDATE flashcards SET last_reviewed = CURRENT_TIMESTAMP, review_after_secs = 21600 WHERE id = ?", params![card_id])?;
-        self.conn.execute("INSERT INTO review_history (flashcard_id, review_date, remembered) VALUES (?, CURRENT_TIMESTAMP, FALSE)", params![card_id])?;
-        self.conn.execute("COMMIT", params![])?;
+        tx.execute(
+            "UPDATE flashcards SET last_reviewed = unixepoch('now'), review_after_secs = 21600 WHERE id = ?1",
+            params![card_id],
+        )?;
+        tx.execute(
+            "INSERT INTO review_history (flashcard_id, review_date, remembered) VALUES (?1, unixepoch('now'), FALSE)",
+            params![card_id],
+        )?;
+        tx.commit()?;
         Ok(())
     }
 
     pub fn get_card(&self, id: i64) -> Result<Flashcard, Box<dyn Error>> {
         let mut stmt = self.conn.prepare(
-            "SELECT f.*, group_concat(ft.tag) from flashcards f 
-            join flashcard_tags ft on f.id = ft.flashcard_id 
-            WHERE f.id = ?
-            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs"
+            "SELECT f.*, group_concat(ft.tag) FROM flashcards f
+            LEFT JOIN flashcard_tags ft ON f.id = ft.flashcard_id
+            WHERE f.id = ?1
+            GROUP BY f.id, f.question, f.answer, f.examples, f.source, f.img, f.question_img, f.last_reviewed, f.review_after_secs",
         )?;
-        let card = stmt.query_row([id], |row| self.flashcard_from_row(row))?;
-        Ok(card)
+        Ok(stmt.query_row([id], flashcard_from_row)?)
     }
 
-    pub fn update_card(&self, card: &Flashcard) -> Result<(), Box<dyn Error>> {
-        // NOTE: transactions don't work: seems like duckdb doesn't see flashcard_tags being removed when trying
-        // to insert new tags:
-        //     Some("Constraint Error: Duplicate key \"flashcard_id: 1, tag: tag1\" violates primary key constraint.
-        //self.conn.execute("BEGIN TRANSACTION", params![])?;
-
-        // Update the flashcard
-        self.conn.execute(
-            "UPDATE flashcards SET question = ?, answer = ?, examples = ?, source = ?, img = ?, question_img = ? WHERE id = ?",
+    pub fn update_card(&mut self, card: &Flashcard) -> Result<(), Box<dyn Error>> {
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "UPDATE flashcards SET question = ?1, answer = ?2, examples = ?3, source = ?4, img = ?5, question_img = ?6 WHERE id = ?7",
             params![
                 card.question,
                 card.answer,
@@ -176,107 +173,84 @@ impl Database {
                 card.img,
                 card.question_img,
                 card.id,
-            ]
+            ],
         )?;
-
-        // Delete existing tags
-        self.conn.execute(
-            "DELETE FROM flashcard_tags WHERE flashcard_id = ?",
+        tx.execute(
+            "DELETE FROM flashcard_tags WHERE flashcard_id = ?1",
             params![card.id],
         )?;
-
-        // Insert new tags
-        for tag in card.tags.iter().as_ref() {
-            self.conn.execute(
-                "INSERT INTO flashcard_tags (flashcard_id, tag) VALUES (?, ?)",
+        for tag in &card.tags {
+            tx.execute(
+                "INSERT INTO flashcard_tags (flashcard_id, tag) VALUES (?1, ?2)",
                 params![card.id, tag],
             )?;
         }
-
-        //self.conn.execute("COMMIT", params![])?;
+        tx.commit()?;
         Ok(())
     }
 
-    pub fn delete_card(&self, id: i64) -> Result<(), Box<dyn Error>> {
-        self.conn.execute(
-            "DELETE FROM flashcard_tags WHERE flashcard_id = ?",
-            params![id],
-        )?;
-        self.conn.execute(
-            "DELETE FROM flashcards WHERE id = ?",
-            params![id],
-        )?;
+    pub fn delete_card(&mut self, id: i64) -> Result<(), Box<dyn Error>> {
+        let tx = self.conn.transaction()?;
+        tx.execute("DELETE FROM flashcard_tags WHERE flashcard_id = ?1", params![id])?;
+        tx.execute("DELETE FROM flashcards WHERE id = ?1", params![id])?;
+        tx.commit()?;
         Ok(())
     }
 
     pub fn review_history(&self) -> Result<Vec<ReviewHistory>, anyhow::Error> {
         let mut stmt = self.conn.prepare("SELECT * FROM review_history")?;
         let rows = stmt.query_map([], |row| {
+            let ts: i64 = row.get(1)?;
             Ok(ReviewHistory {
-                flashcard_id: row.get::<_, i64>(0)?,
-                review_date: from_duckdb_timestamp(row.get::<_, Value>(1)?),
-                remembered: row.get::<_, bool>(2)?,
+                flashcard_id: row.get(0)?,
+                review_date: DateTime::from_timestamp(ts, 0).unwrap_or_else(Utc::now),
+                remembered: row.get(2)?,
             })
         })?;
-        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
-    /// How many times on average a single card was reviewed per month.
-    pub fn avg_reviews_per_month(&self) -> Result<f64, DuckdbError> {
+    pub fn avg_reviews_per_month(&self) -> Result<f64, rusqlite::Error> {
         let query = "
         SELECT avg(reviews) FROM (
             SELECT
                 flashcard_id,
-                strftime('%Y-%m', review_date) as year_month,
+                strftime('%Y-%m', review_date, 'unixepoch') as year_month,
                 count(*) as reviews
             FROM review_history
             GROUP BY flashcard_id, year_month
         )";
         let mut stmt = self.conn.prepare(query)?;
-        let avg: f64 = stmt.query_row([], |row| row.get(0))?;
-        Ok(avg)
-    }
-
-    /// Helper function to construct a Flashcard from a database row
-    fn flashcard_from_row(&self, row: &duckdb::Row) -> Result<Flashcard, duckdb::Error> {
-        Ok(Flashcard {
-            id: row.get::<_, i64>(0)?,
-            question: row.get(1)?,
-            answer: row.get(2)?,
-            examples: row.get(3)?,
-            source: row.get(4)?,
-            img: row.get(5)?,
-            last_reviewed: from_duckdb_timestamp(row.get::<_, Value>(6)?),
-            review_after_secs: row.get(7)?,
-            question_img: row.get(8)?,
-            tags: row
-                .get::<_, String>(9)?
-                .split(",")
-                .map(|s| s.to_string())
-                .collect(),
-        })
+        stmt.query_row([], |row| row.get(0))
     }
 }
 
-pub fn from_duckdb_timestamp(t: Value) -> DateTime<Utc> {
-    match t {
-        Value::Timestamp(time_unit, value) => {
-            DateTime::from_timestamp_micros(time_unit.to_micros(value))
-                .unwrap()
-                .with_timezone(&Utc)
-        }
-        _ => panic!("expected timestamp, got {:?}", t),
-    }
+fn flashcard_from_row(row: &rusqlite::Row) -> rusqlite::Result<Flashcard> {
+    let ts: i64 = row.get(6)?;
+    Ok(Flashcard {
+        id: row.get(0)?,
+        question: row.get(1)?,
+        answer: row.get(2)?,
+        examples: row.get(3)?,
+        source: row.get(4)?,
+        img: row.get(5)?,
+        last_reviewed: DateTime::from_timestamp(ts, 0).unwrap_or_else(Utc::now),
+        review_after_secs: row.get(7)?,
+        question_img: row.get(8)?,
+        tags: row
+            .get::<_, Option<String>>(9)?
+            .map(|s| s.split(',').map(str::to_string).collect())
+            .unwrap_or_default(),
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::Flashcard;
 
     #[test]
     fn test_update_card_works_when_nothing_changed() {
-        let db = Database::in_memory().unwrap();
+        let mut db = Database::in_memory().unwrap();
         let mut card = Flashcard::new("question1".to_string(), "answer1".to_string());
         card.tags = vec!["tag1".to_string()];
         db.add_card(&card).unwrap();
@@ -290,7 +264,7 @@ mod tests {
 
     #[test]
     fn test_ok_appends_to_review_history() {
-        let db = Database::in_memory().unwrap();
+        let mut db = Database::in_memory().unwrap();
         let card = Flashcard::new("question1".to_string(), "answer1".to_string());
         db.add_card(&card).unwrap();
 
