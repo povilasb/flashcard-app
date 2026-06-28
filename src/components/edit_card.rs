@@ -1,4 +1,4 @@
-#[cfg(not(feature = "ssr"))]
+#[cfg(feature = "hydrate")]
 use crate::api::client::fetch_card;
 use crate::components::add_card::FlashcardForm;
 #[cfg(feature = "ssr")]
@@ -66,7 +66,7 @@ pub fn EditCard() -> impl IntoView {
     // Load card data
     Effect::new(move |_| {
         spawn_local(async move {
-            #[cfg(not(feature = "ssr"))]
+            #[cfg(feature = "hydrate")]
             match fetch_card(id()).await {
                 Ok(card) => set_card.set(Some(card)),
                 Err(e) => web_sys::console::error_1(&e.to_string().into()),

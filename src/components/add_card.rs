@@ -7,9 +7,9 @@ use leptos_router::{hooks::use_query, params::Params};
 use crate::model::Flashcard;
 use leptos::wasm_bindgen::JsCast;
 
-#[cfg(not(feature = "ssr"))]
+#[cfg(feature = "hydrate")]
 use crate::api::client::create_card;
-#[cfg(not(feature = "ssr"))]
+#[cfg(feature = "hydrate")]
 use crate::api::CreateCardRequest;
 
 /// Reused to add or edit a card.
@@ -152,7 +152,7 @@ pub fn AddCard() -> impl IntoView {
             .filter(|s| !s.is_empty())
             .collect::<Vec<_>>();
 
-        #[cfg(not(feature = "ssr"))]
+        #[cfg(feature = "hydrate")]
         {
             let req = CreateCardRequest {
                 question: get("question"),
