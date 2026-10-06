@@ -1,1 +1,7 @@
-<h1>Hello world</h1>
+<script lang="ts">
+  import ListCards from '$lib/components/ListCards.svelte'
+</script>
+
+<main>
+  <ListCards />
+</main>
