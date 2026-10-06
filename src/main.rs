@@ -25,7 +25,7 @@ async fn main() {
     let routes = generate_route_list(App);
 
     let app = Router::new()
-        .route("/api/cards", post(cards::create_card))
+        .route("/api/cards", post(cards::create_card).get(cards::get_all_cards))
         .route("/api/cards/{id}", get(cards::get_card).delete(cards::delete_card))
         .nest_service("/media", ServeDir::new("db/media"))
         .leptos_routes(&leptos_options, routes, {

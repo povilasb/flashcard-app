@@ -1,10 +1,29 @@
-use axum::{extract::Path, http::StatusCode, response::IntoResponse, Json};
+use axum::{
+    extract::{Path, Query},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
+};
+use serde::Deserialize;
 
 use crate::{
     api::CreateCardRequest,
     db::Database,
     model::Flashcard,
 };
+
+#[derive(Deserialize)]
+pub struct ListCardsQuery {
+    pub tag: Option<String>,
+}
+
+pub async fn get_all_cards(Query(query): Query<ListCardsQuery>) -> impl IntoResponse {
+    let db = Database::get_instance().unwrap().lock().unwrap();
+    match db.all_cards(query.tag) {
+        Ok(cards) => Json(cards).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}
 
 pub async fn get_card(Path(id): Path<i64>) -> impl IntoResponse {
     let db = Database::get_instance().unwrap().lock().unwrap();

@@ -1,18 +1,9 @@
-#[cfg(feature = "ssr")]
-use crate::db::Database;
 #[cfg(feature = "hydrate")]
-use crate::api::client::delete_card;
+use crate::api::client::{delete_card, fetch_cards};
 use crate::model::Flashcard;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos::*;
-
-#[server(GetAllCards, "/api")]
-pub async fn get_all_cards(tag: Option<String>) -> Result<Vec<Flashcard>, ServerFnError> {
-    let db = Database::get_instance().unwrap().lock().unwrap();
-    db.all_cards(tag)
-        .map_err(|e| ServerFnError::new(e.to_string()))
-}
 
 #[component]
 pub fn ListCards() -> impl IntoView {
@@ -20,7 +11,8 @@ pub fn ListCards() -> impl IntoView {
 
     let fetch = move || {
         spawn_local(async move {
-            match get_all_cards(None).await {
+            #[cfg(feature = "hydrate")]
+            match fetch_cards(None).await {
                 Ok(fetched_cards) => set_cards.set(fetched_cards),
                 Err(e) => {
                     web_sys::console::error_1(&format!("Failed to fetch cards: {}", e).into())
