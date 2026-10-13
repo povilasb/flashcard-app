@@ -184,7 +184,7 @@
     </div>{/if}
   {#if selected}
     <section
-      class="mt-5 rounded-xl border bg-white p-4"
+      class="mt-5 rounded-xl border bg-surface p-4"
       aria-label="Selected text"
       aria-busy={selectionPending}
     >
@@ -203,7 +203,7 @@
           >Retry translation</button
         >{:else}<p>{selectedTranslation}</p>{/if}
       {#if selectedTranslation && !selectionPending}<a
-          class="mt-4 inline-block rounded bg-accent px-4 py-2 text-white"
+          class="mt-4 inline-block rounded bg-accent px-4 py-2 text-on-accent"
           href={flashcardLink(selected, language, selectedTranslation)}
           >Create flashcard</a
         >{/if}
@@ -245,7 +245,7 @@
     overflow: auto;
     padding: 8px 12px;
     border-radius: 8px;
-    background: var(--color-ink);
+    background: var(--color-toast);
     color: white;
     font-size: 14px;
     overflow-wrap: anywhere;

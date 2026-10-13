@@ -24,7 +24,7 @@
   <div class="rich-text">{@html html}</div>
 {:catch}
   <div class="whitespace-pre-wrap">{text}</div>
-  <p role="alert" class="text-sm text-red-600">Unable to format text.</p>
+  <p role="alert" class="text-sm text-danger">Unable to format text.</p>
 {/await}
 
 <style>

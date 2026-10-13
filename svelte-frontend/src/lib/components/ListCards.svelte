@@ -449,7 +449,7 @@
     padding: 0 18px 0 14px;
     border-radius: 10px;
     background: var(--color-accent);
-    color: white;
+    color: var(--color-on-accent);
     font-size: 15px;
     font-weight: 600;
   }
@@ -479,7 +479,7 @@
     background: var(--color-surface);
   }
   .field:hover {
-    border-color: #a9b0bc;
+    border-color: var(--color-field-hover);
   }
   .field:focus-within {
     border-color: var(--color-accent);
@@ -558,10 +558,10 @@
   .filter[aria-pressed='true'] {
     background: var(--color-accent);
     border-color: var(--color-accent);
-    color: white;
+    color: var(--color-on-accent);
   }
   .filter[aria-pressed='true'] span {
-    color: white;
+    color: var(--color-on-accent);
     opacity: 0.8;
   }
   .table-panel {
@@ -585,7 +585,7 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-subtle);
-    background: #f7f8fa;
+    background: var(--color-table-head);
     border-bottom: 1px solid var(--color-divider);
   }
   th.answer {
@@ -598,7 +598,7 @@
     overflow-wrap: break-word;
   }
   tbody tr:hover {
-    background: #fafbfc;
+    background: var(--color-surface-hover);
   }
   .q {
     font-weight: 600;
@@ -628,12 +628,12 @@
     border: 1px solid transparent;
     border-radius: 999px;
     background: var(--color-chip);
-    color: #2b303a;
+    color: var(--color-chip-ink);
     font-size: 13px;
     font-weight: 500;
   }
   .tag:hover {
-    border-color: #a9b0bc;
+    border-color: var(--color-field-hover);
   }
   .when {
     width: 140px;
@@ -691,7 +691,7 @@
     color: var(--color-ink);
   }
   .act.danger:hover {
-    background: #fdecea;
+    background: var(--color-danger-soft);
     color: var(--color-danger);
   }
   .empty {
@@ -729,7 +729,7 @@
     padding: 14px 20px;
     font-size: 13px;
     color: var(--color-subtle);
-    background: #fafbfc;
+    background: var(--color-surface-hover);
   }
   .legend {
     display: inline-flex;
@@ -753,7 +753,7 @@
     gap: 8px;
     padding: 6px 6px 6px 16px;
     border-radius: 12px;
-    background: var(--color-ink);
+    background: var(--color-toast);
     color: white;
     font-size: 14px;
     font-weight: 500;

@@ -106,7 +106,7 @@
   <form class="mb-4 flex flex-wrap gap-3" onsubmit={add}>
     <label
       >Word<input
-        class="block rounded border bg-white p-2"
+        class="block rounded border bg-surface p-2"
         required
         maxlength="256"
         bind:value={word}
@@ -115,14 +115,14 @@
     >
     <label
       >Translation<input
-        class="block rounded border bg-white p-2"
+        class="block rounded border bg-surface p-2"
         maxlength="4096"
         bind:value={translation}
         disabled={busy}
       /></label
     >
     <button
-      class="self-end rounded bg-accent px-4 py-2 text-white disabled:opacity-50"
+      class="self-end rounded bg-accent px-4 py-2 text-on-accent disabled:opacity-50"
       disabled={busy || saving.length > 0 || !word.trim()}>Add word</button
     >
   </form>
@@ -133,9 +133,9 @@
       disabled={busy || saving.length > 0}>Reload vocabulary</button
     >{/if}
   {#if loading}<p role="status">Loading vocabulary…</p>{:else}
-    <div class="overflow-x-auto rounded-xl border bg-white">
+    <div class="overflow-x-auto rounded-xl border bg-surface">
       <table class="w-full text-left">
-        <thead class="bg-gray-50"
+        <thead class="bg-table-head"
           ><tr
             ><th scope="col" class="p-3">Word</th><th scope="col" class="p-3"
               >Translation</th
@@ -176,7 +176,7 @@
               >
               <td class="p-3"
                 ><button
-                  class="inline-flex size-10 items-center justify-center rounded text-danger hover:bg-red-50 disabled:opacity-50"
+                  class="inline-flex size-10 items-center justify-center rounded text-danger hover:bg-danger-soft disabled:opacity-50"
                   aria-label={`Delete word: ${item.word}`}
                   title="Delete word"
                   disabled={busy || saving.includes(item.word)}
@@ -192,7 +192,7 @@
   {/if}
   <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
     <span>Total: {words.length}</span><button
-      class="rounded bg-accent px-4 py-2 text-white disabled:opacity-50"
+      class="rounded bg-accent px-4 py-2 text-on-accent disabled:opacity-50"
       disabled={busy || loading || saving.length > 0}
       onclick={importWords}>{busy ? 'Working…' : 'Add from flashcards'}</button
     >

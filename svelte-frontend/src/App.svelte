@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Moon, Sun } from 'lucide-svelte'
   import ListCards from '$lib/components/ListCards.svelte'
   import ReviewCards from '$lib/components/ReviewCards.svelte'
   import CardEditor from '$lib/components/CardEditor.svelte'
@@ -7,6 +8,26 @@
   import Vocabulary from '$lib/components/languages/Vocabulary.svelte'
   import GenerateSentence from '$lib/components/languages/GenerateSentence.svelte'
   import WriteStory from '$lib/components/languages/WriteStory.svelte'
+
+  let initialDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  try {
+    const saved = localStorage.getItem('theme')
+    if (saved === 'dark' || saved === 'light') initialDark = saved === 'dark'
+  } catch {
+    // Storage may be unavailable; the toggle still works for this page.
+  }
+  document.documentElement.dataset.theme = initialDark ? 'dark' : 'light'
+  let dark = $state(initialDark)
+
+  function toggleTheme() {
+    dark = !dark
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+    try {
+      localStorage.setItem('theme', dark ? 'dark' : 'light')
+    } catch {
+      // Storage may be unavailable; the toggle still works for this page.
+    }
+  }
 
   const path = window.location.pathname
   const isListPage = path === '/' || path === '/list-cards'
@@ -27,33 +48,44 @@
   class:max-sm:content-start={isDesignedPage}
 >
   <nav
-    class="w-64 shrink-0 border-r border-gray-200 bg-gray-100 p-4"
+    class="w-64 shrink-0 border-r border-line bg-chip p-4"
     class:max-sm:w-full={isDesignedPage}
     aria-label="Main navigation"
   >
+    <button
+      class="mb-4 inline-flex size-11 cursor-pointer items-center justify-center rounded text-ink-2 hover:bg-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+      title={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+      onclick={toggleTheme}
+    >
+      {#if dark}<Sun size={20} aria-hidden="true" />{:else}<Moon
+          size={20}
+          aria-hidden="true"
+        />{/if}
+    </button>
     <div class="space-y-2">
       <a
         href="/add-card"
         aria-current={isAddPage ? 'page' : undefined}
-        class="block rounded px-4 py-2 text-gray-700 hover:bg-gray-200 aria-[current=page]:bg-gray-200"
+        class="block rounded px-4 py-2 text-ink-2 hover:bg-line aria-[current=page]:bg-line"
         >Add new card</a
       >
       <a
         href="/review-cards"
         aria-current={isReviewPage ? 'page' : undefined}
-        class="block rounded px-4 py-2 text-gray-700 hover:bg-gray-200 aria-[current=page]:bg-gray-200"
+        class="block rounded px-4 py-2 text-ink-2 hover:bg-line aria-[current=page]:bg-line"
         >Review cards</a
       >
       <a
         href="/list-cards"
         aria-current={isListPage ? 'page' : undefined}
-        class="block rounded px-4 py-2 text-gray-700 hover:bg-gray-200 aria-[current=page]:bg-gray-200"
+        class="block rounded px-4 py-2 text-ink-2 hover:bg-line aria-[current=page]:bg-line"
         >List cards</a
       >
       <a
         href="/learn-languages"
         aria-current={isLanguagePage ? 'page' : undefined}
-        class="block rounded px-4 py-2 text-gray-700 hover:bg-gray-200 aria-[current=page]:bg-gray-200"
+        class="block rounded px-4 py-2 text-ink-2 hover:bg-line aria-[current=page]:bg-line"
         >Learn languages</a
       >
     </div>

@@ -627,7 +627,7 @@
     color: var(--color-back);
   }
   .side-badge.front {
-    background: rgb(53 84 209 / 0.1);
+    background: var(--color-accent-soft);
   }
   .side-badge.back {
     background: var(--color-back-soft);
@@ -641,7 +641,7 @@
       box-shadow 0.15s;
   }
   .field:hover {
-    border-color: #a9b0bc;
+    border-color: var(--color-field-hover);
   }
   .field:focus,
   .field:focus-within {
@@ -812,7 +812,7 @@
     border-radius: 999px;
     font-size: 14px;
     font-weight: 500;
-    color: #2b303a;
+    color: var(--color-chip-ink);
   }
   .chip button {
     width: 28px;
@@ -880,7 +880,7 @@
     padding: 0 20px;
     border-radius: 10px;
     background: var(--color-accent);
-    color: white;
+    color: var(--color-on-accent);
     font-size: 15px;
     font-weight: 600;
   }
@@ -910,7 +910,7 @@
   .seg {
     display: flex;
     padding: 3px;
-    background: #e4e6ea;
+    background: var(--color-segment);
     border-radius: 10px;
   }
   .seg button {

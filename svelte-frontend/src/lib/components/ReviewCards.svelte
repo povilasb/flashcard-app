@@ -99,7 +99,7 @@
       {#key card.id}
         <div class="mx-auto my-8 max-w-[600px] p-4">
           <div
-            class="relative mb-4 rounded-lg border border-slate-200 bg-white p-6 pb-12 text-left shadow"
+            class="relative mb-4 rounded-lg border border-line bg-surface p-6 pb-12 text-left shadow"
           >
             <div class="flex flex-col items-start gap-4">
               <div class="text-left text-[1.1rem] leading-6">
@@ -127,7 +127,7 @@
               {/if}
             {/if}
             {#if showExamples}
-              <div class="mt-4 rounded-md bg-gray-50 p-4">
+              <div class="mt-4 rounded-md bg-chip p-4">
                 <b>Examples:</b>
                 <RichText text={card.examples ?? ''} />
               </div>
@@ -162,18 +162,18 @@
           <div class="mt-4 flex justify-center gap-4">
             {#if showAnswer && !cardId}
               <button
-                class="cursor-pointer rounded-md bg-blue-100 px-6 py-3 text-base text-blue-700 transition-colors hover:bg-blue-200 disabled:cursor-wait disabled:opacity-50"
+                class="cursor-pointer rounded-md bg-accent-soft px-6 py-3 text-base text-accent transition-colors hover:bg-chip disabled:cursor-wait disabled:opacity-50"
                 disabled={submitting}
                 onclick={() => submitAnswer(true)}>Remember</button
               >
               <button
-                class="cursor-pointer rounded-md bg-red-100 px-6 py-3 text-base text-red-600 transition-colors hover:bg-red-200 disabled:cursor-wait disabled:opacity-50"
+                class="cursor-pointer rounded-md bg-danger-soft px-6 py-3 text-base text-danger transition-colors hover:bg-chip disabled:cursor-wait disabled:opacity-50"
                 disabled={submitting}
                 onclick={() => submitAnswer(false)}>Not</button
               >
             {:else if !showAnswer}
               <button
-                class="cursor-pointer rounded-md bg-blue-100 px-6 py-3 text-base text-blue-700 transition-colors hover:bg-blue-200"
+                class="cursor-pointer rounded-md bg-accent-soft px-6 py-3 text-base text-accent transition-colors hover:bg-chip"
                 onclick={() => (showAnswer = true)}>Show Answer</button
               >
             {/if}
@@ -187,9 +187,9 @@
     {/if}
   {/if}
   {#if error}
-    <p role="alert" class="mt-4 text-red-600">{error}</p>
+    <p role="alert" class="mt-4 text-danger">{error}</p>
     {#if !card}<button
-        class="mt-2 rounded bg-gray-100 px-4 py-2 hover:bg-gray-200"
+        class="mt-2 rounded bg-chip px-4 py-2 hover:bg-line"
         onclick={loadCards}>Retry</button
       >{/if}
   {/if}

@@ -24,15 +24,15 @@
 <section aria-busy={pending}>
   <h1 class="mb-5 text-3xl font-bold">Learn new words</h1>
   <button
-    class="rounded bg-accent px-4 py-2 text-white disabled:opacity-50"
+    class="rounded bg-accent px-4 py-2 text-on-accent disabled:opacity-50"
     disabled={pending}
     onclick={generate}>Generate Sentence</button
   >
   {#if pending}<p role="status" class="py-3">Generating sentence…</p>{/if}
   {#if error}<p role="alert" class="py-3">{error}</p>{/if}
-  <div class="my-5 overflow-x-auto rounded-xl border bg-white">
+  <div class="my-5 overflow-x-auto rounded-xl border bg-surface">
     <table class="w-full text-left">
-      <thead class="bg-gray-50"
+      <thead class="bg-table-head"
         ><tr
           ><th scope="col" class="p-3">New Sentence</th><th
             scope="col"
@@ -49,7 +49,7 @@
     </table>
   </div>
   {#if result && !pending}<a
-      class="inline-block rounded bg-accent px-4 py-2 text-white"
+      class="inline-block rounded bg-accent px-4 py-2 text-on-accent"
       href={flashcardLink(result.sentence.text, result.language)}
       >Create flashcard</a
     >{/if}
