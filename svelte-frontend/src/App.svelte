@@ -10,12 +10,13 @@
   const isAddPage = path === '/add-card'
   const editId = path.match(/^\/cards\/edit\/(\d+)\/?$/)?.[1]
   const isEditorPage = isAddPage || !!editId
+  const isDesignedPage = isEditorPage || isListPage
 </script>
 
-<div class="flex min-h-screen" class:flex-wrap={isEditorPage}>
+<div class="flex min-h-screen" class:flex-wrap={isDesignedPage}>
   <nav
     class="w-64 shrink-0 border-r border-gray-200 bg-gray-100 p-4"
-    class:max-sm:w-full={isEditorPage}
+    class:max-sm:w-full={isDesignedPage}
     aria-label="Main navigation"
   >
     <div class="space-y-2">
@@ -42,8 +43,8 @@
 
   <main
     class="min-w-0 flex-1"
-    class:p-4={!isEditorPage}
-    class:max-sm:basis-full={isEditorPage}
+    class:p-4={!isDesignedPage}
+    class:max-sm:basis-full={isDesignedPage}
   >
     {#if isAddPage}
       <CardEditor />

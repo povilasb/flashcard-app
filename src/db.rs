@@ -192,7 +192,10 @@ impl Database {
     pub fn delete_card(&mut self, id: i64) -> Result<(), Box<dyn Error>> {
         let tx = self.conn.transaction()?;
         tx.execute("DELETE FROM flashcard_tags WHERE flashcard_id = ?1", params![id])?;
-        tx.execute("DELETE FROM flashcards WHERE id = ?1", params![id])?;
+        tx.execute("DELETE FROM review_history WHERE flashcard_id = ?1", params![id])?;
+        if tx.execute("DELETE FROM flashcards WHERE id = ?1", params![id])? == 0 {
+            return Err(rusqlite::Error::QueryReturnedNoRows.into());
+        }
         tx.commit()?;
         Ok(())
     }

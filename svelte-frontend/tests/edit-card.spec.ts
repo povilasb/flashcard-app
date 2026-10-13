@@ -26,7 +26,9 @@ test('list link opens Svelte editing and saves without changing existing images'
   })
   await page.goto('/list-cards')
 
-  await page.getByRole('link', { name: 'Original question' }).click()
+  await page
+    .getByRole('link', { name: 'Original question', exact: true })
+    .click()
 
   await expect(page).toHaveURL(/\/cards\/edit\/7$/)
   await expect(page.getByRole('heading', { name: 'Edit card' })).toBeVisible()
@@ -81,13 +83,11 @@ test('replaces and removes images, preserving changes when save fails', async ({
   })
   await page.goto('/cards/edit/7')
   await page.getByRole('button', { name: 'Remove question image' }).click()
-  await page
-    .getByLabel('Answer image', { exact: true })
-    .setInputFiles({
-      name: 'new.png',
-      mimeType: 'image/png',
-      buffer: Buffer.from('fixture'),
-    })
+  await page.getByLabel('Answer image', { exact: true }).setInputFiles({
+    name: 'new.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('fixture'),
+  })
   await page.getByLabel('Answer', { exact: true }).fill('Changed answer')
 
   await page.getByRole('button', { name: 'Save changes', exact: true }).click()

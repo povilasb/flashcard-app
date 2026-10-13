@@ -60,9 +60,37 @@ pub async fn get_card(Path(id): Path<i64>) -> impl IntoResponse {
 
 pub async fn delete_card(Path(id): Path<i64>) -> impl IntoResponse {
     let mut db = Database::get_instance().unwrap().lock().unwrap();
+    delete_card_from(&mut db, id)
+}
+
+fn delete_card_from(db: &mut Database, id: i64) -> axum::response::Response {
     match db.delete_card(id) {
         Ok(_) => StatusCode::NO_CONTENT.into_response(),
-        Err(_) => StatusCode::NOT_FOUND.into_response(),
+        Err(error) => match error.downcast_ref::<rusqlite::Error>() {
+            Some(rusqlite::Error::QueryReturnedNoRows) => StatusCode::NOT_FOUND.into_response(),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()).into_response(),
+        },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn delete_returns_no_content_then_not_found() {
+        let mut db = Database::load_or_init(":memory:").unwrap();
+        let mut card = Flashcard::new("question".into(), "answer".into());
+        card.tags = vec!["rust".into()];
+        db.add_card(&card).unwrap();
+        db.ok(1).unwrap();
+
+        let response = delete_card_from(&mut db, 1);
+
+        assert_eq!(response.status(), StatusCode::NO_CONTENT);
+        assert!(db.all_cards(None).unwrap().is_empty());
+        assert!(db.review_history().unwrap().is_empty());
+        assert_eq!(delete_card_from(&mut db, 1).status(), StatusCode::NOT_FOUND);
     }
 }
 
