@@ -17,6 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - uses: Swatinem/rust-cache@v2
+    - uses: oven-sh/setup-bun@v2
 
     - name: Install Nix
       uses: cachix/install-nix-action@v25
@@ -24,7 +25,21 @@ jobs:
         nix_path: nixpkgs=channel:nixos-unstable
 
     - name: Build
-      run: nix-shell --run "cargo check --locked --verbose --features=ssr"
+      run: nix-shell --run "cargo check --locked --all-targets"
 
     - name: Run tests
-      run: nix-shell --run "cargo test --locked --verbose --features=ssr"
+      run: nix-shell --run "cargo test --locked"
+
+    - name: Check and build Svelte
+      working-directory: svelte-frontend
+      run: |
+        bun install --frozen-lockfile
+        bun run check
+        bun run format:check
+        bun run build
+
+    - name: Browser tests
+      working-directory: svelte-frontend
+      run: |
+        bun x playwright install --with-deps chromium
+        bun run test:e2e

@@ -1,14 +1,11 @@
-#![cfg(feature = "ssr")]
-
 use rig::client::CompletionClient;
-use rusqlite;
 use rig::{client::ProviderClient, completion::Prompt, providers::anthropic};
 
+use super::learning;
 use super::model::NewSentence;
 use crate::db::Database as FlashcardsDb;
 use crate::errors::AppError;
 use crate::settings::{Language, Settings};
-use crate::words_db;
 
 static GEN_NEW_WORDS_PROMPT: &str = "
 You are bilingual {lang} and English speaker.
@@ -90,7 +87,7 @@ impl Agent {
     }
 
     pub async fn gen_new_sentence(&self) -> Result<NewSentence, AppError> {
-        let words = words_db!().all_words()?;
+        let words = learning::vocabulary()?;
         let prompt = GEN_NEW_WORDS_PROMPT
             .replace("{lang}", self.lang.as_str())
             .replace(
@@ -102,11 +99,14 @@ impl Agent {
                     .join("\n"),
             );
 
-        let response = self.llm_client.prompt(prompt).await?;
+        let response = learning::provider_timeout(async {
+            self.llm_client.prompt(prompt).await.map_err(AppError::from)
+        })
+        .await?;
 
-        let text = parse_xml_tag(&response, "new_sentence").unwrap();
-        let new_word = parse_xml_tag(&response, "new_word").unwrap();
-        let translation = parse_xml_tag(&response, "translation").unwrap();
+        let text = required_tag(&response, "new_sentence")?;
+        let new_word = required_tag(&response, "new_word")?;
+        let translation = required_tag(&response, "translation")?;
         Ok(NewSentence {
             text,
             new_word,
@@ -121,19 +121,21 @@ impl Agent {
             .replace("{lang}", self.lang.as_str())
             .replace("{sentences}", &sentences);
 
-        let response = self.llm_client.prompt(&prompt).await?;
-        let words = llm_resp_parse_words(&response);
-
-        let words_db = words_db!();
-        for word in words {
-            words_db.add_word(&word, "")?;
-        }
+        let response = learning::provider_timeout(async {
+            self.llm_client
+                .prompt(&prompt)
+                .await
+                .map_err(AppError::from)
+        })
+        .await?;
+        let words = llm_resp_parse_words(&response)?;
+        learning::with_database(|db| db.add_words(&words))?;
 
         Ok(())
     }
 
     pub async fn gen_story(&self) -> Result<String, AppError> {
-        let words = { words_db!().all_words()? };
+        let words = learning::vocabulary()?;
         let prompt = GEN_STORY_PROMPT
             .replace("{lang}", self.lang.as_str())
             .replace(
@@ -145,7 +147,16 @@ impl Agent {
                     .join("\n"),
             );
 
-        let response = self.llm_client.prompt(&prompt).await?;
+        let response = learning::provider_timeout(async {
+            self.llm_client
+                .prompt(&prompt)
+                .await
+                .map_err(AppError::from)
+        })
+        .await?;
+        if response.trim().is_empty() {
+            return Err(AppError::LlmError("Empty story".into()));
+        }
         Ok(response)
     }
 }
@@ -162,19 +173,20 @@ pub async fn populate_words_db(lang: &str) -> Result<(), AppError> {
         .agent(anthropic::CLAUDE_3_7_SONNET)
         .max_tokens(1000)
         .build();
-    let response = agent.prompt(&prompt).await?;
-    let words = llm_resp_parse_words(&response);
-
-    let words_db = words_db!();
-    for word in words {
-        words_db.add_word(&word, "")?;
-    }
+    let response =
+        learning::provider_timeout(async { agent.prompt(&prompt).await.map_err(AppError::from) })
+            .await?;
+    let words = llm_resp_parse_words(&response)?;
+    learning::with_database(|db| db.add_words(&words))?;
 
     Ok(())
 }
 
-fn get_all_sentences(lang: &str) -> rusqlite::Result<String> {
-    let flashcards_db = FlashcardsDb::get_instance().unwrap().lock().unwrap();
+fn get_all_sentences(lang: &str) -> Result<String, AppError> {
+    let flashcards_db = FlashcardsDb::get_instance()
+        .map_err(|error| AppError::SqliteError(error.to_string()))?
+        .lock()
+        .map_err(|_| AppError::SqliteError("Flashcards database unavailable".into()))?;
     let cards = flashcards_db.all_cards(Some(lang.to_string()))?;
     Ok(cards
         .iter()
@@ -192,14 +204,18 @@ fn get_all_sentences(lang: &str) -> rusqlite::Result<String> {
 //
 // Returns:
 // ["gustaria", "cocina"]
-fn llm_resp_parse_words(response: &str) -> Vec<String> {
-    let words = parse_xml_tag(response, "words").unwrap_or_default();
-    words
+fn llm_resp_parse_words(response: &str) -> Result<Vec<String>, AppError> {
+    let words = required_tag(response, "words")?;
+    let words: Vec<String> = words
         .split('\n')
         .map(|word| word.trim())
         .filter(|word| !word.is_empty())
         .map(|word| word.to_string())
-        .collect()
+        .collect();
+    if words.iter().any(|word| word.len() > 256) {
+        return Err(AppError::LlmError("Imported word is too long".into()));
+    }
+    Ok(words)
 }
 
 // Minimal XML parser for non-perfect LLM output.
@@ -208,8 +224,9 @@ fn parse_xml_tag(text: &str, tag: &str) -> Option<String> {
     let end_tag = format!("</{}>", tag);
 
     if let Some(start_idx) = text.find(&start_tag) {
-        if let Some(end_idx) = text.find(&end_tag) {
-            let start_content = start_idx + start_tag.len();
+        let start_content = start_idx + start_tag.len();
+        if let Some(end) = text[start_content..].find(&end_tag) {
+            let end_idx = start_content + end;
             let content = &text[start_content..end_idx];
             return Some(content.trim().to_string());
         }
@@ -217,45 +234,67 @@ fn parse_xml_tag(text: &str, tag: &str) -> Option<String> {
     None
 }
 
+fn required_tag(text: &str, tag: &str) -> Result<String, AppError> {
+    parse_xml_tag(text, tag)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| AppError::LlmError(format!("Missing or empty {tag} in provider response")))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
+    fn required_output_rejects_missing_empty_and_reversed_tags() {
+        for response in [
+            "plain text",
+            "<new_word> </new_word>",
+            "</new_word><new_word>hola",
+        ] {
+            assert!(required_tag(response, "new_word").is_err());
+        }
+
+        assert_eq!(
+            required_tag("</new_word><new_word>café</new_word>", "new_word").unwrap(),
+            "café"
+        );
+    }
+
+    #[test]
     fn test_llm_resp_parse_words() {
         // Test case 1: Normal response with words
         let response1 = "Here is the response:\n<words>\ngustaria\ncocina\n</words>\nThank you!";
-        let result1 = llm_resp_parse_words(response1);
+        let result1 = llm_resp_parse_words(response1).unwrap();
         assert_eq!(result1, vec!["gustaria", "cocina"]);
 
         // Test case 2: Response with extra whitespace
         let response2 = "  <words>  \n  gustaria  \n  cocina  \n  </words>  ";
-        let result2 = llm_resp_parse_words(response2);
+        let result2 = llm_resp_parse_words(response2).unwrap();
         assert_eq!(result2, vec!["gustaria", "cocina"]);
 
         // Test case 3: Response with empty lines
         let response3 = "<words>\ngustaria\n\ncocina\n\n</words>";
-        let result3 = llm_resp_parse_words(response3);
+        let result3 = llm_resp_parse_words(response3).unwrap();
         assert_eq!(result3, vec!["gustaria", "cocina"]);
 
         // Test case 4: Response without tags
         let response4 = "This response has no tags";
         let result4 = llm_resp_parse_words(response4);
-        assert_eq!(result4, Vec::<String>::new());
+        assert!(result4.is_err());
 
         // Test case 5: Response with only opening tag
         let response5 = "<words>\ngustaria\ncocina";
         let result5 = llm_resp_parse_words(response5);
-        assert_eq!(result5, Vec::<String>::new());
+        assert!(result5.is_err());
 
         // Test case 6: Empty response
         let response6 = "";
         let result6 = llm_resp_parse_words(response6);
-        assert_eq!(result6, Vec::<String>::new());
+        assert!(result6.is_err());
 
         // Test case 7: Response with empty words section
         let response7 = "<words>\n</words>";
         let result7 = llm_resp_parse_words(response7);
-        assert_eq!(result7, Vec::<String>::new());
+        assert!(result7.is_err());
     }
 }

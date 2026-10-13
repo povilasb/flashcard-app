@@ -1,16 +1,12 @@
 //! Usage:
-//! cargo run --bin=lang --features=ssr
-
-#![cfg(feature = "ssr")]
+//! cargo run --bin=lang
 
 use flashcard_app::languages::ai;
-use flashcard_app::settings::Language;
+use flashcard_app::settings::Settings;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    ai::Agent::new(Language::Spanish, "")
-        .populate_words_db()
-        .await
-        .unwrap();
+    Settings::load()?;
+    ai::Agent::from_settings().populate_words_db().await?;
     Ok(())
 }

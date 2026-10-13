@@ -1,8 +1,14 @@
-#[cfg(feature = "ssr")]
 pub mod cards;
-pub mod client;
+pub mod languages;
+pub mod media;
+pub mod rich_text;
 
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SubmitAnswerRequest {
+    pub remembered: bool,
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateCardRequest {

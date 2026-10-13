@@ -1,10 +1,54 @@
-use axum::{extract::Path, http::StatusCode, response::IntoResponse, Json};
+use axum::{
+    extract::{Path, Query},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
+};
+use serde::Deserialize;
 
 use crate::{
-    api::CreateCardRequest,
+    api::{CreateCardRequest, SubmitAnswerRequest},
     db::Database,
     model::Flashcard,
 };
+
+#[derive(Deserialize)]
+pub struct ListCardsQuery {
+    pub tag: Option<String>,
+}
+
+pub async fn get_all_cards(Query(query): Query<ListCardsQuery>) -> impl IntoResponse {
+    let db = Database::get_instance().unwrap().lock().unwrap();
+    match db.all_cards(query.tag) {
+        Ok(cards) => Json(cards).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}
+
+pub async fn get_cards_to_review() -> impl IntoResponse {
+    let db = Database::get_instance().unwrap().lock().unwrap();
+    match db.cards_to_review() {
+        Ok(cards) => Json(cards).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}
+
+pub async fn submit_answer(
+    Path(id): Path<i64>,
+    Json(req): Json<SubmitAnswerRequest>,
+) -> impl IntoResponse {
+    let mut db = Database::get_instance().unwrap().lock().unwrap();
+    let result = if req.remembered {
+        db.ok(id)
+    } else {
+        db.fail(id)
+    };
+
+    match result {
+        Ok(_) => StatusCode::NO_CONTENT.into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}
 
 pub async fn get_card(Path(id): Path<i64>) -> impl IntoResponse {
     let db = Database::get_instance().unwrap().lock().unwrap();
@@ -16,9 +60,74 @@ pub async fn get_card(Path(id): Path<i64>) -> impl IntoResponse {
 
 pub async fn delete_card(Path(id): Path<i64>) -> impl IntoResponse {
     let mut db = Database::get_instance().unwrap().lock().unwrap();
+    delete_card_from(&mut db, id)
+}
+
+fn delete_card_from(db: &mut Database, id: i64) -> axum::response::Response {
     match db.delete_card(id) {
         Ok(_) => StatusCode::NO_CONTENT.into_response(),
-        Err(_) => StatusCode::NOT_FOUND.into_response(),
+        Err(error) => match error.downcast_ref::<rusqlite::Error>() {
+            Some(rusqlite::Error::QueryReturnedNoRows) => StatusCode::NOT_FOUND.into_response(),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()).into_response(),
+        },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn delete_returns_no_content_then_not_found() {
+        let mut db = Database::load_or_init(":memory:").unwrap();
+        let mut card = Flashcard::new("question".into(), "answer".into());
+        card.tags = vec!["rust".into()];
+        db.add_card(&card).unwrap();
+        db.ok(1).unwrap();
+
+        let response = delete_card_from(&mut db, 1);
+
+        assert_eq!(response.status(), StatusCode::NO_CONTENT);
+        assert!(db.all_cards(None).unwrap().is_empty());
+        assert!(db.review_history().unwrap().is_empty());
+        assert_eq!(delete_card_from(&mut db, 1).status(), StatusCode::NOT_FOUND);
+    }
+}
+
+pub async fn update_card(
+    Path(id): Path<i64>,
+    Json(req): Json<CreateCardRequest>,
+) -> impl IntoResponse {
+    if req.question.trim().is_empty() {
+        return (StatusCode::BAD_REQUEST, "Question is required").into_response();
+    }
+    let mut db = Database::get_instance().unwrap().lock().unwrap();
+    let mut card = match db.get_card(id) {
+        Ok(card) => card,
+        Err(error) => {
+            return match error.downcast_ref::<rusqlite::Error>() {
+                Some(rusqlite::Error::QueryReturnedNoRows) => StatusCode::NOT_FOUND.into_response(),
+                _ => (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()).into_response(),
+            };
+        }
+    };
+    card.question = req.question;
+    card.answer = req.answer;
+    card.examples = req.examples;
+    card.source = req.source;
+    card.question_img = req.question_img_fname;
+    card.img = req.answer_img_fname;
+    card.tags = req
+        .tags
+        .into_iter()
+        .map(|tag| tag.trim().to_owned())
+        .filter(|tag| !tag.is_empty())
+        .collect();
+    card.tags.sort();
+    card.tags.dedup();
+    match db.update_card(&card) {
+        Ok(_) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()).into_response(),
     }
 }
 

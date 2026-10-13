@@ -2,6 +2,6 @@
 //! Which later leverages flashcards.
 
 pub mod ai;
-pub mod components;
 mod db;
-mod model;
+pub mod learning;
+pub(crate) mod model;

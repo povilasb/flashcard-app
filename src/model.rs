@@ -36,12 +36,6 @@ impl Flashcard {
     }
 }
 
-#[derive(Copy, Clone)]
-pub enum FlashcardAnswer {
-    Remember,
-    Not,
-}
-
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ReviewHistory {
     pub flashcard_id: i64,
