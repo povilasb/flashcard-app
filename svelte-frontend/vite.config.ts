@@ -10,6 +10,11 @@ export default defineConfig({
     alias: { $lib: fileURLToPath(new URL('./src/lib', import.meta.url)) },
   },
   server: {
-    proxy: { '/api': 'http://127.0.0.1:7001' },
+    proxy: {
+      '/api': 'http://127.0.0.1:7001',
+      '/media': 'http://127.0.0.1:7001',
+      '/cards/edit': 'http://127.0.0.1:7001',
+      '/pkg': 'http://127.0.0.1:7001',
+    },
   },
 })
