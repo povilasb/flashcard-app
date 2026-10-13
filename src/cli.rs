@@ -1,5 +1,5 @@
 //! Usage:
-//! cargo run --bin=cli --features=ssr
+//! cargo run --bin=cli
 
 use flashcard_app::db::Database;
 use std::env;

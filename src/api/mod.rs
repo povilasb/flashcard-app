@@ -1,12 +1,7 @@
-#[cfg(feature = "ssr")]
 pub mod cards;
-#[cfg(feature = "ssr")]
-pub mod rich_text;
-#[cfg(feature = "ssr")]
-pub mod media;
-#[cfg(feature = "ssr")]
 pub mod languages;
-pub mod client;
+pub mod media;
+pub mod rich_text;
 
 use serde::{Deserialize, Serialize};
 

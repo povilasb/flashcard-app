@@ -1,5 +1,3 @@
-#![cfg(feature = "ssr")]
-
 use chrono::{DateTime, Utc};
 use once_cell::sync::OnceCell;
 use rusqlite::{params, Connection, OptionalExtension};

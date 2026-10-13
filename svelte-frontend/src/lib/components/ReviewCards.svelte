@@ -3,6 +3,8 @@
   import { CirclePlus, Pencil } from 'lucide-svelte'
   import RichText from './RichText.svelte'
 
+  let { tag, cardId }: { tag?: string; cardId?: string } = $props()
+
   type ReviewCard = {
     id: number
     question: string
@@ -31,10 +33,17 @@
     loading = true
     error = null
     try {
-      const response = await fetch('/api/cards/review')
+      const response = await fetch(
+        cardId
+          ? `/api/cards/${cardId}`
+          : tag
+            ? `/api/cards?${new URLSearchParams({ tag })}`
+            : '/api/cards/review',
+      )
       if (!response.ok)
         throw new Error(`Failed to load cards (HTTP ${response.status})`)
-      cards = await response.json()
+      const result = await response.json()
+      cards = cardId ? [result] : result
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Failed to load cards'
     } finally {
@@ -151,7 +160,7 @@
             >
           </div>
           <div class="mt-4 flex justify-center gap-4">
-            {#if showAnswer}
+            {#if showAnswer && !cardId}
               <button
                 class="cursor-pointer rounded-md bg-blue-100 px-6 py-3 text-base text-blue-700 transition-colors hover:bg-blue-200 disabled:cursor-wait disabled:opacity-50"
                 disabled={submitting}
@@ -162,7 +171,7 @@
                 disabled={submitting}
                 onclick={() => submitAnswer(false)}>Not</button
               >
-            {:else}
+            {:else if !showAnswer}
               <button
                 class="cursor-pointer rounded-md bg-blue-100 px-6 py-3 text-base text-blue-700 transition-colors hover:bg-blue-200"
                 onclick={() => (showAnswer = true)}>Show Answer</button

@@ -1,5 +1,4 @@
 //! Shared vocabulary and translation operations for HTTP and Leptos callers.
-#![cfg(feature = "ssr")]
 
 use super::{db::Database, model::Word};
 use crate::{

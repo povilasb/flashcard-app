@@ -1,25 +1,27 @@
 # About
 
-Flashcard app.
 The less we forget.
+Flashcard app with local only data storage.
 
-## Usage
+## Run
 
 ```sh
-cargo install cargo-leptos
-cargo leptos watch
+cd svelte-frontend
+bun install --frozen-lockfile
+bun run build
+cd ..
+cargo run --locked
 ```
 
-## Why?
+Open http://127.0.0.1:7001. Axum serves the API, media, and built frontend, including direct page links.
+For frontend development, run `bun run dev` in `svelte-frontend` alongside Rust; Vite proxies `/api` and `/media` to port 7001.
 
-* Ability to reuse flashcards for other purposes, like exercising touch typing.
-* Simple custom reviewing algorithms.
-* Easy card sharing across devices with total data ownership and privacy.
+Settings are read from `./settings.toml` when present, otherwise the OS config directory's `flashcard-app/settings.toml`.
+The same `db_path`, learning language, provider credentials, and SQLite files are retained. Media remains in `./db/media`.
+No data migration is needed. Back up your databases before upgrading; run only one server against your data.
 
-## Caveats
+## Packaging
 
-* An image can be loaded only from `./db/media`.
-
-## Architecture
-
-* Checkout the `src/app.rs` for different routes and views.
+`./build.sh` creates `flashcard-app.tar.gz` with the Rust binary and its sibling `frontend/` assets.
+Extract and run the binary from any directory; frontend paths resolve beside the executable. Settings/database paths follow the existing rules above.
+No Bun, Node, browser WASM, or frontend framework runtime server is needed in the installed package.

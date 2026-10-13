@@ -1,6 +1,5 @@
-use leptos::prelude::*;
-
-use crate::components::markdown::Markdown;
+//! Markdown, highlighted code, and AsciiMath rendering for HTTP clients.
+use comrak::{markdown_to_html_with_plugins, plugins::syntect::SyntectAdapter, Options, Plugins};
 
 /// Rich text is composed of a series of text blocks.
 /// Each can be rendered using a different technique.
@@ -19,36 +18,17 @@ impl TextBlock {
     }
 }
 
-/// Render an [ASCIIMath](https://asciimath.org/) expression as MathML.
-#[component]
-pub fn AsciiMath(input: String) -> impl IntoView {
-    let ascii_math = mathemascii::parse(&input);
-    let math_ml = mathemascii::render_mathml(ascii_math);
-    view! { <span inner_html=math_ml></span> }
-}
-
-/// Renders AsciiMath and Markdown.
-#[component]
-pub fn RichText(#[prop(into)] text: String) -> impl IntoView {
-    parse_rich_text(&text)
-        .into_iter()
-        .map(|block| match block {
-            TextBlock::Raw(text) => {
-                view! { <Markdown text=Memo::new(move |_| text.clone()) /> }.into_any()
-            }
-            TextBlock::AsciiMath(text) => view! { <AsciiMath input=text /> }.into_any(),
-        })
-        .collect_view()
-}
-
-/// Render the same Markdown and MathML used by the Leptos component for HTTP clients.
+/// Render Markdown and MathML for browser clients.
 pub(crate) fn render_rich_text(text: &str) -> String {
     parse_rich_text(text)
         .into_iter()
         .map(|block| match block {
-            TextBlock::Raw(text) => format!("<div>{}</div>", super::markdown::md_to_html(&text)),
+            TextBlock::Raw(text) => format!("<div>{}</div>", md_to_html(&text)),
             TextBlock::AsciiMath(text) => {
-                format!("<span>{}</span>", mathemascii::render_mathml(mathemascii::parse(&text)))
+                format!(
+                    "<span>{}</span>",
+                    mathemascii::render_mathml(mathemascii::parse(&text))
+                )
             }
         })
         .collect()
@@ -58,6 +38,13 @@ pub(crate) fn render_rich_text(text: &str) -> String {
 enum ParseState {
     RawStr(usize, usize),
     InAsciiMath(usize, usize),
+}
+
+fn md_to_html(text: &str) -> String {
+    let mut plugins = Plugins::default();
+    let adapter = SyntectAdapter::new(Some("InspiredGitHub"));
+    plugins.render.codefence_syntax_highlighter = Some(&adapter);
+    markdown_to_html_with_plugins(text, &Options::default(), &plugins)
 }
 
 impl ParseState {
@@ -138,6 +125,16 @@ fn match_str(s: &str, char_iter: &mut impl Iterator<Item = (usize, char)>) -> Pa
 #[cfg(test)]
 mod tests {
     use super::{match_str, parse_rich_text, Parsed, TextBlock};
+
+    #[test]
+    fn renders_markdown_math_and_highlighted_code_without_a_frontend_framework() {
+        let html = super::render_rich_text("**bold** `math 1/3`\n\n```rust\nlet x = 1;\n```");
+
+        assert!(html.contains("<strong>bold</strong>"));
+        assert!(html.contains("<math"));
+        assert!(html.contains("<pre"));
+        assert!(html.contains("let"));
+    }
 
     #[test]
     fn test_match_str() {

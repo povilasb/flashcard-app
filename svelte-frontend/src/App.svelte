@@ -10,7 +10,9 @@
 
   const path = window.location.pathname
   const isListPage = path === '/' || path === '/list-cards'
-  const isReviewPage = path === '/review-cards'
+  const reviewTag = path.match(/^\/review-cards\/(.+?)\/?$/)?.[1]
+  const viewId = path.match(/^\/cards\/(\d+)\/?$/)?.[1]
+  const isReviewPage = path === '/review-cards' || !!reviewTag
   const isAddPage = path === '/add-card'
   const editId = path.match(/^\/cards\/edit\/(\d+)\/?$/)?.[1]
   const isEditorPage = isAddPage || !!editId
@@ -67,7 +69,11 @@
     {:else if editId}
       <EditCard cardId={editId} />
     {:else if isReviewPage}
-      <ReviewCards />
+      <ReviewCards
+        tag={reviewTag ? decodeURIComponent(reviewTag) : undefined}
+      />
+    {:else if viewId}
+      <ReviewCards cardId={viewId} />
     {:else if isListPage}
       <ListCards />
     {:else if isLanguagePage}

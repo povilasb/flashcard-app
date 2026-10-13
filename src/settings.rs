@@ -1,16 +1,10 @@
-#[cfg(feature = "ssr")]
 use anyhow::{Context, Result};
-#[cfg(feature = "ssr")]
 use config::Config;
-#[cfg(feature = "ssr")]
 use dirs;
-#[cfg(feature = "ssr")]
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
-#[cfg(feature = "ssr")]
 use std::fs;
-#[cfg(feature = "ssr")]
 use std::path::Path;
 use std::sync::OnceLock;
 
@@ -52,7 +46,6 @@ pub struct Settings {
     pub db_path: String,
 }
 
-#[cfg(feature = "ssr")]
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -83,7 +76,6 @@ impl Settings {
     }
 
     /// Call this from main.rs.
-    #[cfg(feature = "ssr")]
     pub fn load() -> Result<Self, config::ConfigError> {
         let cfg_dir = dirs::config_dir()
             .ok_or(config::ConfigError::NotFound("config_dir".to_string()))?
@@ -129,7 +121,6 @@ impl Settings {
     }
 
     /// Save settings to a TOML file at the specified path.
-    #[cfg(feature = "ssr")]
     pub fn save(&self, settings_path: &Path) -> Result<()> {
         let toml_string =
             toml::to_string_pretty(self).with_context(|| "Failed to serialize settings to TOML")?;

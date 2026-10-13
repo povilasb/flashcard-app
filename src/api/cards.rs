@@ -94,7 +94,10 @@ mod tests {
     }
 }
 
-pub async fn update_card(Path(id): Path<i64>, Json(req): Json<CreateCardRequest>) -> impl IntoResponse {
+pub async fn update_card(
+    Path(id): Path<i64>,
+    Json(req): Json<CreateCardRequest>,
+) -> impl IntoResponse {
     if req.question.trim().is_empty() {
         return (StatusCode::BAD_REQUEST, "Question is required").into_response();
     }
@@ -114,8 +117,12 @@ pub async fn update_card(Path(id): Path<i64>, Json(req): Json<CreateCardRequest>
     card.source = req.source;
     card.question_img = req.question_img_fname;
     card.img = req.answer_img_fname;
-    card.tags = req.tags.into_iter().map(|tag| tag.trim().to_owned())
-        .filter(|tag| !tag.is_empty()).collect();
+    card.tags = req
+        .tags
+        .into_iter()
+        .map(|tag| tag.trim().to_owned())
+        .filter(|tag| !tag.is_empty())
+        .collect();
     card.tags.sort();
     card.tags.dedup();
     match db.update_card(&card) {

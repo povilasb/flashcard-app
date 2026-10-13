@@ -1,5 +1,3 @@
-#![cfg(feature = "ssr")]
-
 use rig::client::CompletionClient;
 use rig::{client::ProviderClient, completion::Prompt, providers::anthropic};
 

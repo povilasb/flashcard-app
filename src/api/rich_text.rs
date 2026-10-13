@@ -15,6 +15,6 @@ pub struct RenderResponse {
 
 pub async fn render(Json(request): Json<RenderRequest>) -> Json<RenderResponse> {
     Json(RenderResponse {
-        html: crate::components::render_rich_text(&request.text),
+        html: crate::rich_text::render_rich_text(&request.text),
     })
 }
