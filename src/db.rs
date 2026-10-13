@@ -263,6 +263,29 @@ mod tests {
     }
 
     #[test]
+    fn test_edit_preserves_review_schedule_history_and_images() {
+        let mut db = Database::in_memory().unwrap();
+        let mut original = Flashcard::new("question".into(), "answer".into());
+        original.img = Some("answer.png".into());
+        original.question_img = Some("question.png".into());
+        db.add_card(&original).unwrap();
+        db.ok(1).unwrap();
+        let before = db.get_card(1).unwrap();
+        let mut edited = before.clone();
+        edited.question = "edited question".into();
+
+        db.update_card(&edited).unwrap();
+
+        let after = db.get_card(1).unwrap();
+        assert_eq!(after.question, "edited question");
+        assert_eq!(after.last_reviewed, before.last_reviewed);
+        assert_eq!(after.review_after_secs, before.review_after_secs);
+        assert_eq!(after.img, before.img);
+        assert_eq!(after.question_img, before.question_img);
+        assert_eq!(db.review_history().unwrap().len(), 1);
+    }
+
+    #[test]
     fn test_ok_appends_to_review_history() {
         let mut db = Database::in_memory().unwrap();
         let card = Flashcard::new("question1".to_string(), "answer1".to_string());

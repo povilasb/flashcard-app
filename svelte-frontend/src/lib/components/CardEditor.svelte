@@ -1,7 +1,20 @@
+<script module lang="ts">
+  export type EditableCard = {
+    id: number
+    question: string
+    answer: string
+    examples: string | null
+    source: string | null
+    tags: string[]
+    question_img: string | null
+    img: string | null
+  }
+</script>
+
 <script lang="ts">
-  import { onDestroy, onMount, tick } from 'svelte'
+  import { onDestroy, onMount, tick, untrack } from 'svelte'
   import { on } from 'svelte/events'
-  import { Check, Link, Plus, X } from 'lucide-svelte'
+  import { Check, ChevronLeft, Link, Plus, X } from 'lucide-svelte'
   import '@fontsource/figtree/400.css'
   import '@fontsource/figtree/500.css'
   import '@fontsource/figtree/600.css'
@@ -11,14 +24,20 @@
   import '@fontsource/newsreader/400-italic.css'
   import ImageInput from './ImageInput.svelte'
 
+  let { card }: { card?: EditableCard } = $props()
+  const initial = untrack(() => card)
+  const editing = initial !== undefined
+
   const params = new URLSearchParams(window.location.search)
   const shortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'
-  let question = $state(params.get('question') ?? '')
-  let answer = $state(params.get('answer') ?? '')
-  let source = $state(params.get('source') ?? '')
-  let tags = $state<string[]>([])
-  let pendingTag = $state(params.get('tag') ?? '')
-  let examples = $state([''])
+  let question = $state(initial?.question ?? params.get('question') ?? '')
+  let answer = $state(initial?.answer ?? params.get('answer') ?? '')
+  let source = $state(
+    editing ? (initial.source ?? '') : (params.get('source') ?? ''),
+  )
+  let tags = $state<string[]>(initial ? [...initial.tags] : [])
+  let pendingTag = $state(editing ? '' : (params.get('tag') ?? ''))
+  let examples = $state(initial?.examples?.split('\n') ?? [''])
   let keepDetails = $state(true)
   let addedCount = $state(0)
   let side = $state<'front' | 'back'>('front')
@@ -28,6 +47,8 @@
   let acknowledgementTimer: ReturnType<typeof setTimeout>
   let questionImage = $state<File | null>(null)
   let answerImage = $state<File | null>(null)
+  let questionFilename = $state(initial?.question_img ?? null)
+  let answerFilename = $state(initial?.img ?? null)
   let questionPreview = $state('')
   let answerPreview = $state('')
   let questionImageInput: ReturnType<typeof ImageInput>
@@ -43,7 +64,7 @@
   onDestroy(() => clearTimeout(acknowledgementTimer))
   onMount(() => on(form, 'keydown', formKeydown))
 
-  async function createCard(event: SubmitEvent) {
+  async function saveCard(event: SubmitEvent) {
     event.preventDefault()
     if (submitting || !question.trim()) return
     commitTags()
@@ -61,25 +82,41 @@
 
     try {
       // ponytail: failed card creation can leave unused uploads; add cleanup when media management is needed.
-      const question_img_fname = await uploadImage(questionImage)
-      const answer_img_fname = await uploadImage(answerImage)
-      const response = await fetch('/api/cards', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...request,
-          question_img_fname,
-          answer_img_fname,
-        }),
-      })
+      const question_img_fname = questionImage
+        ? await uploadImage(questionImage)
+        : questionFilename
+      const answer_img_fname = answerImage
+        ? await uploadImage(answerImage)
+        : answerFilename
+      const response = await fetch(
+        editing ? `/api/cards/${initial.id}` : '/api/cards',
+        {
+          method: editing ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...request,
+            question_img_fname,
+            answer_img_fname,
+          }),
+        },
+      )
       if (!response.ok)
-        throw new Error(`Failed to create card (HTTP ${response.status})`)
-      resetFields(keepDetails)
-      addedCount += 1
+        throw new Error(
+          `Failed to ${editing ? 'save' : 'create'} card (HTTP ${response.status})`,
+        )
+      if (editing) {
+        questionFilename = question_img_fname
+        answerFilename = answer_img_fname
+        questionImage = null
+        answerImage = null
+      } else {
+        resetFields(keepDetails)
+        addedCount += 1
+      }
       saved = true
       acknowledgementTimer = setTimeout(() => (saved = false), 3000)
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : 'Failed to create card'
+      error = cause instanceof Error ? cause.message : 'Failed to save card'
     } finally {
       submitting = false
     }
@@ -194,6 +231,14 @@
 <div class="page">
   <div class="wrap">
     <header class="header">
+      {#if editing}
+        <div class="header-left">
+          <a class="back-link" href="/list-cards"
+            ><ChevronLeft size={16} aria-hidden="true" />Back to cards</a
+          >
+          <h1>Edit card</h1>
+        </div>
+      {/if}
       {#if addedCount}<span class="session-pill"
           >{addedCount}
           {addedCount === 1 ? 'card' : 'cards'} added this session</span
@@ -204,7 +249,7 @@
       <form
         class="form-col"
         bind:this={form}
-        onsubmit={createCard}
+        onsubmit={saveCard}
         aria-busy={submitting}
       >
         <fieldset disabled={submitting}>
@@ -237,6 +282,7 @@
               label="Question image"
               bind:this={questionImageInput}
               bind:file={questionImage}
+              bind:filename={questionFilename}
               bind:preview={questionPreview}
               disabled={submitting}
             />
@@ -267,6 +313,7 @@
               label="Answer image"
               bind:this={answerImageInput}
               bind:file={answerImage}
+              bind:filename={answerFilename}
               bind:preview={answerPreview}
               disabled={submitting}
             />
@@ -361,30 +408,37 @@
           </section>
 
           <div class="actions">
-            <label class="keep" for="keep-details"
-              ><input
-                id="keep-details"
-                type="checkbox"
-                bind:checked={keepDetails}
-              />Keep source &amp; tags for the next card</label
-            >
+            {#if !editing}<label class="keep" for="keep-details"
+                ><input
+                  id="keep-details"
+                  type="checkbox"
+                  bind:checked={keepDetails}
+                />Keep source &amp; tags for the next card</label
+              >{/if}
             <div class="actions-right">
               {#if saved}<span role="status" class="status"
-                  ><Check size={18} aria-hidden="true" />Card added</span
+                  ><Check size={18} aria-hidden="true" />{editing
+                    ? 'Card saved'
+                    : 'Card added'}</span
                 >{/if}
               {#if error}<p role="alert" class="alert">{error}</p>{/if}
-              <button
-                type="button"
-                class="ghost clear"
-                onclick={() => resetFields(false)}>Clear</button
-              >
+              {#if !editing}<button
+                  type="button"
+                  class="ghost clear"
+                  onclick={() => resetFields(false)}>Clear</button
+                >{/if}
               <button
                 type="submit"
                 class="primary"
                 disabled={submitting || !question.trim()}
-                >{submitting ? 'Creating…' : 'Create card'}<span
-                  class="kbd"
-                  aria-hidden="true">{shortcut} ↵</span
+                >{editing
+                  ? submitting
+                    ? 'Saving…'
+                    : 'Save changes'
+                  : submitting
+                    ? 'Creating…'
+                    : 'Create card'}<span class="kbd" aria-hidden="true"
+                  >{shortcut} ↵</span
                 ></button
               >
             </div>

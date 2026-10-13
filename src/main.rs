@@ -31,7 +31,7 @@ async fn main() {
         .route("/api/cards", post(cards::create_card).get(cards::get_all_cards))
         .route("/api/cards/review", get(cards::get_cards_to_review))
         .route("/api/cards/{id}/review", post(cards::submit_answer))
-        .route("/api/cards/{id}", get(cards::get_card).delete(cards::delete_card))
+        .route("/api/cards/{id}", get(cards::get_card).put(cards::update_card).delete(cards::delete_card))
         .nest_service("/media", ServeDir::new(flashcard_app::api::media::MEDIA_DIR))
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();

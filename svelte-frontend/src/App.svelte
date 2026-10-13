@@ -1,18 +1,21 @@
 <script lang="ts">
   import ListCards from '$lib/components/ListCards.svelte'
   import ReviewCards from '$lib/components/ReviewCards.svelte'
-  import AddCard from '$lib/components/AddCard.svelte'
+  import CardEditor from '$lib/components/CardEditor.svelte'
+  import EditCard from '$lib/components/EditCard.svelte'
 
   const path = window.location.pathname
   const isListPage = path === '/' || path === '/list-cards'
   const isReviewPage = path === '/review-cards'
   const isAddPage = path === '/add-card'
+  const editId = path.match(/^\/cards\/edit\/(\d+)\/?$/)?.[1]
+  const isEditorPage = isAddPage || !!editId
 </script>
 
-<div class="flex min-h-screen" class:flex-wrap={isAddPage}>
+<div class="flex min-h-screen" class:flex-wrap={isEditorPage}>
   <nav
     class="w-64 shrink-0 border-r border-gray-200 bg-gray-100 p-4"
-    class:max-sm:w-full={isAddPage}
+    class:max-sm:w-full={isEditorPage}
     aria-label="Main navigation"
   >
     <div class="space-y-2">
@@ -39,11 +42,13 @@
 
   <main
     class="min-w-0 flex-1"
-    class:p-4={!isAddPage}
-    class:max-sm:basis-full={isAddPage}
+    class:p-4={!isEditorPage}
+    class:max-sm:basis-full={isEditorPage}
   >
     {#if isAddPage}
-      <AddCard />
+      <CardEditor />
+    {:else if editId}
+      <EditCard cardId={editId} />
     {:else if isReviewPage}
       <ReviewCards />
     {:else if isListPage}

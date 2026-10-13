@@ -13,8 +13,6 @@ export default defineConfig({
     proxy: {
       '/api': 'http://127.0.0.1:7001',
       '/media': 'http://127.0.0.1:7001',
-      '/cards/edit': 'http://127.0.0.1:7001',
-      '/pkg': 'http://127.0.0.1:7001',
     },
   },
 })

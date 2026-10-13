@@ -66,7 +66,11 @@
         {#each cards as card (card.id)}
           <Table.Row class="hover:bg-gray-50">
             <Table.Cell class="border px-4 py-2 whitespace-normal"
-              >{card.question}</Table.Cell
+              ><a
+                href={`/cards/edit/${card.id}`}
+                class="block text-blue-700 hover:underline focus-visible:underline"
+                >{card.question || 'Untitled card'}</a
+              ></Table.Cell
             >
             <Table.Cell class="border px-4 py-2 whitespace-normal"
               >{card.answer}</Table.Cell

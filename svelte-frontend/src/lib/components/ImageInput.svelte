@@ -6,11 +6,13 @@
     file = $bindable<File | null>(null),
     disabled = false,
     preview = $bindable(''),
+    filename = $bindable<string | null>(null),
   }: {
     label: string
     file?: File | null
     disabled?: boolean
     preview?: string
+    filename?: string | null
   } = $props()
 
   let error = $state<string | null>(null)
@@ -18,7 +20,11 @@
 
   $effect(() => {
     const url = file ? URL.createObjectURL(file) : ''
-    preview = url
+    preview =
+      url ||
+      (filename
+        ? `/media/${filename.split('/').map(encodeURIComponent).join('/')}`
+        : '')
     if (!file && input) input.value = ''
     return () => {
       if (url) URL.revokeObjectURL(url)
@@ -51,6 +57,7 @@
 
   export function clear() {
     file = null
+    filename = null
     error = null
     if (input) input.value = ''
   }
@@ -94,7 +101,9 @@
       selectFile(event.dataTransfer?.files[0])
     }}
   >
-    <Image size={18} aria-hidden="true" />{file ? 'Replace image' : 'Add image'}
+    <Image size={18} aria-hidden="true" />{preview
+      ? 'Replace image'
+      : 'Add image'}
   </button>
   <span class="image-hint">or drop / paste an image</span>
 </div>
