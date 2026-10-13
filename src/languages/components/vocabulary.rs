@@ -6,30 +6,25 @@ use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
 use crate::languages::model::Word;
-#[cfg(feature = "ssr")]
-use crate::words_db;
 
 #[server(GetWords, "/api")]
 async fn get_words() -> Result<Vec<Word>, AppError> {
-    Ok(words_db!().all_words()?)
+    crate::languages::learning::vocabulary()
 }
 
 #[server(UpdateWordTranslation, "/api")]
 async fn update_word_translation(word: String, translation: String) -> Result<(), AppError> {
-    words_db!().update_word_translation(&word, &translation)?;
-    Ok(())
+    crate::languages::learning::update_word(&word, &translation)
 }
 
 #[server(DeleteWord, "/api")]
 async fn delete_word(word: String) -> Result<(), AppError> {
-    words_db!().delete_word(&word)?;
-    Ok(())
+    crate::languages::learning::delete_word(&word)
 }
 
 #[server(AddWord, "/api")]
 async fn add_word(word: String, translation: String) -> Result<(), AppError> {
-    words_db!().add_word(&word, &translation)?;
-    Ok(())
+    crate::languages::learning::add_word(&word, &translation)
 }
 
 #[server(AddFromFlashcards, "/api")]

@@ -57,6 +57,9 @@ name = "cli"
 path = "src/cli.rs"
 required-features = ["ssr"]
 
+[dev-dependencies]
+tokio = { version = "1", features = ["test-util", "macros", "rt"] }
+
 [[bin]]
 name = "flashcard-app"
 path = "src/main.rs"

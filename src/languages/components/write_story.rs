@@ -7,12 +7,6 @@ use crate::errors::AppError;
 #[cfg(feature = "ssr")]
 use crate::languages::ai;
 use crate::settings::Language;
-#[cfg(feature = "ssr")]
-use crate::settings::Settings;
-#[cfg(feature = "ssr")]
-use crate::words_db;
-#[cfg(feature = "ssr")]
-use translators::{GoogleTranslator, Translator};
 
 #[server(WriteStory, "/api")]
 async fn write_story() -> Result<(String, Language), AppError> {
@@ -23,24 +17,12 @@ async fn write_story() -> Result<(String, Language), AppError> {
 
 #[server(GetTranslation, "/api")]
 async fn get_translation(word: String) -> Result<Option<String>, AppError> {
-    Ok(words_db!().get_translation(&word)?)
+    crate::languages::learning::lookup(&word)
 }
 
 #[server(Translators, "/api")]
 async fn translators_translate(text: String) -> Result<Option<String>, AppError> {
-    let settings = Settings::get();
-    let target_lang = match settings.learning_language {
-        Language::Spanish => "es",
-        Language::French => "fr",
-        Language::Portuguese => "pt-PT",
-        Language::German => "de",
-    };
-
-    let google_trans = GoogleTranslator::default();
-    let translation = google_trans
-        .translate_async(&text, target_lang, "en")
-        .await?;
-    Ok(Some(translation))
+    crate::languages::learning::translate(&text).await.map(Some)
 }
 
 /// Writes a simple story using the words in my vocabulary.

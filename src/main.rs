@@ -8,6 +8,7 @@ async fn main() {
     use axum::Router;
     use colog;
     use flashcard_app::api::cards;
+    use flashcard_app::api::languages;
     use flashcard_app::app::*;
     use flashcard_app::settings::Settings;
     use leptos::prelude::*;
@@ -25,6 +26,14 @@ async fn main() {
     let routes = generate_route_list(App);
 
     let app = Router::new()
+        .nest("/api/languages", Router::new()
+            .route("/vocabulary", get(languages::vocabulary).post(languages::add_word).put(languages::update_word).delete(languages::delete_word))
+            .route("/vocabulary/from-flashcards", post(languages::import))
+            .route("/sentence", post(languages::sentence))
+            .route("/story", post(languages::story))
+            .route("/translation", get(languages::lookup))
+            .route("/translate", post(languages::translate))
+            .layer(axum::extract::DefaultBodyLimit::max(64 * 1024)))
         .route("/api/media", post(flashcard_app::api::media::upload)
             .layer(axum::extract::DefaultBodyLimit::max(flashcard_app::api::media::MAX_UPLOAD_BYTES + 64 * 1024)))
         .route("/api/rich-text/render", post(flashcard_app::api::rich_text::render))

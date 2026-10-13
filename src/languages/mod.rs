@@ -4,4 +4,5 @@
 pub mod ai;
 pub mod components;
 mod db;
-mod model;
+pub(crate) mod model;
+pub mod learning;

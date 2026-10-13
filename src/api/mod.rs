@@ -4,6 +4,8 @@ pub mod cards;
 pub mod rich_text;
 #[cfg(feature = "ssr")]
 pub mod media;
+#[cfg(feature = "ssr")]
+pub mod languages;
 pub mod client;
 
 use serde::{Deserialize, Serialize};

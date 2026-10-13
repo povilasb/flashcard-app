@@ -1,10 +1,10 @@
 use std::fmt;
 
-#[cfg(feature = "ssr")]
-use rusqlite::Error as SqliteError;
 use leptos::prelude::*;
 #[cfg(feature = "ssr")]
 use rig::completion::PromptError;
+#[cfg(feature = "ssr")]
+use rusqlite::Error as SqliteError;
 use serde::{Deserialize, Serialize};
 use server_fn::codec::JsonEncoding;
 #[cfg(feature = "ssr")]
@@ -16,6 +16,9 @@ pub enum AppError {
     ServerFnError(ServerFnErrorErr),
     LlmError(String),
     GoogleTranslateError(String),
+    Timeout,
+    InvalidInput(String),
+    NotFound,
 }
 
 impl fmt::Display for AppError {
@@ -25,6 +28,9 @@ impl fmt::Display for AppError {
             AppError::ServerFnError(e) => write!(f, "{}", e),
             AppError::LlmError(e) => write!(f, "{}", e),
             AppError::GoogleTranslateError(e) => write!(f, "{}", e),
+            AppError::Timeout => write!(f, "Provider request timed out"),
+            AppError::InvalidInput(e) => write!(f, "{}", e),
+            AppError::NotFound => write!(f, "Word not found"),
         }
     }
 }
@@ -32,7 +38,10 @@ impl fmt::Display for AppError {
 #[cfg(feature = "ssr")]
 impl From<SqliteError> for AppError {
     fn from(e: SqliteError) -> Self {
-        AppError::SqliteError(e.to_string())
+        match e {
+            SqliteError::QueryReturnedNoRows => AppError::NotFound,
+            _ => AppError::SqliteError(e.to_string()),
+        }
     }
 }
 
