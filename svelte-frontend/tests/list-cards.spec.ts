@@ -26,6 +26,7 @@ const cards = [
 
 test.beforeEach(async ({ page }) => {
   await page.clock.install({ time: new Date('2026-10-13T12:00:00Z') })
+  await page.clock.pauseAt(new Date('2026-10-13T12:00:01Z'))
   await page.route('**/api/cards', (route) => route.fulfill({ json: cards }))
 })
 
