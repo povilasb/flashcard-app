@@ -1,11 +1,16 @@
 <script lang="ts">
   import { onDestroy } from 'svelte'
+  import ImageInput from './ImageInput.svelte'
 
   const params = new URLSearchParams(window.location.search)
   let submitting = $state(false)
   let error = $state<string | null>(null)
   let saved = $state(false)
   let acknowledgementTimer: ReturnType<typeof setTimeout>
+  let questionImage = $state<File | null>(null)
+  let answerImage = $state<File | null>(null)
+  let questionImageInput: ReturnType<typeof ImageInput>
+  let answerImageInput: ReturnType<typeof ImageInput>
 
   onDestroy(() => clearTimeout(acknowledgementTimer))
 
@@ -18,7 +23,6 @@
     const form = event.currentTarget
     const data = new FormData(form)
     const text = (name: string) => data.get(name) as string
-    const filename = (name: string) => (data.get(name) as File).name || null
 
     const request = {
       question: text('question'),
@@ -33,8 +37,6 @@
             .filter(Boolean),
         ),
       ],
-      question_img_fname: filename('question_image'),
-      answer_img_fname: filename('answer_image'),
     }
 
     submitting = true
@@ -43,15 +45,24 @@
     clearTimeout(acknowledgementTimer)
 
     try {
+      // ponytail: failed card creation can leave unused uploads; add cleanup when media management is needed.
+      const question_img_fname = await uploadImage(questionImage)
+      const answer_img_fname = await uploadImage(answerImage)
       const response = await fetch('/api/cards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
+        body: JSON.stringify({
+          ...request,
+          question_img_fname,
+          answer_img_fname,
+        }),
       })
       if (!response.ok)
         throw new Error(`Failed to create card (HTTP ${response.status})`)
 
       form.reset()
+      questionImage = null
+      answerImage = null
       saved = true
       acknowledgementTimer = setTimeout(() => (saved = false), 3000)
     } catch (cause) {
@@ -59,6 +70,20 @@
     } finally {
       submitting = false
     }
+  }
+
+  async function uploadImage(file: File | null): Promise<string | null> {
+    if (!file) return null
+    const data = new FormData()
+    data.append('image', file)
+    const response = await fetch('/api/media', { method: 'POST', body: data })
+    if (!response.ok) {
+      throw new Error(
+        `Failed to upload image: ${(await response.text()) || response.status}`,
+      )
+    }
+    const result: { filename: string } = await response.json()
+    return result.filename
   }
 </script>
 
@@ -74,31 +99,29 @@
             type="text"
             required
             value={params.get('question') ?? ''}
+            onpaste={(event) => questionImageInput.paste(event)}
           />
         </label>
-        <label class="ml-4">
-          <span>Image:</span>
-          <input
-            name="question_image"
-            type="file"
-            accept="image/*"
-            aria-label="Question image"
-          />
-        </label>
+        <ImageInput
+          label="Question image"
+          bind:this={questionImageInput}
+          bind:file={questionImage}
+          disabled={submitting}
+        />
         <label>
           <span>Answer:</span>
-          <textarea name="answer" rows="4" value={params.get('answer') ?? ''}
-          ></textarea>
+          <textarea
+            name="answer"
+            rows="4"
+            value={params.get('answer') ?? ''}
+            onpaste={(event) => answerImageInput.paste(event)}></textarea>
         </label>
-        <label class="ml-4">
-          <span>Image:</span>
-          <input
-            name="answer_image"
-            type="file"
-            accept="image/*"
-            aria-label="Answer image"
-          />
-        </label>
+        <ImageInput
+          label="Answer image"
+          bind:this={answerImageInput}
+          bind:file={answerImage}
+          disabled={submitting}
+        />
         <label>
           <span>Examples:</span>
           <textarea name="examples" rows="4"></textarea>

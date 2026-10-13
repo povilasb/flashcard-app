@@ -25,12 +25,14 @@ async fn main() {
     let routes = generate_route_list(App);
 
     let app = Router::new()
+        .route("/api/media", post(flashcard_app::api::media::upload)
+            .layer(axum::extract::DefaultBodyLimit::max(flashcard_app::api::media::MAX_UPLOAD_BYTES + 64 * 1024)))
         .route("/api/rich-text/render", post(flashcard_app::api::rich_text::render))
         .route("/api/cards", post(cards::create_card).get(cards::get_all_cards))
         .route("/api/cards/review", get(cards::get_cards_to_review))
         .route("/api/cards/{id}/review", post(cards::submit_answer))
         .route("/api/cards/{id}", get(cards::get_card).delete(cards::delete_card))
-        .nest_service("/media", ServeDir::new("db/media"))
+        .nest_service("/media", ServeDir::new(flashcard_app::api::media::MEDIA_DIR))
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();
             move || shell(leptos_options.clone())
