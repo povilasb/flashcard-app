@@ -12,4 +12,5 @@ pub mod review_cards;
 pub mod view_card;
 
 pub use richtext::RichText;
+pub(crate) use richtext::render_rich_text;
 pub use show_error::ShowError;

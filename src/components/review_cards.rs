@@ -1,32 +1,10 @@
 use crate::components::error_notification::ErrorNotification;
 use crate::components::flashcard::Flashcard;
-#[cfg(feature = "ssr")]
-use crate::db::Database;
+#[cfg(feature = "hydrate")]
+use crate::api::client::{fetch_cards_to_review, submit_answer};
 use crate::model;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-
-#[server(GetNextCards, "/api")]
-async fn get_cards() -> Result<Vec<model::Flashcard>, ServerFnError> {
-    let db = Database::get_instance().unwrap().lock().unwrap();
-    db.cards_to_review()
-        .map_err(|e| ServerFnError::new(e.to_string()))
-}
-
-#[server(SubmitAnswer, "/api")]
-pub async fn submit_answer(card_id: i64, remembered: bool) -> Result<(), ServerFnError> {
-    let mut db = Database::get_instance().unwrap().lock().unwrap();
-
-    if remembered {
-        db.ok(card_id)
-            .map_err(|e| ServerFnError::new(e.to_string()))?;
-    } else {
-        db.fail(card_id)
-            .map_err(|e| ServerFnError::new(e.to_string()))?;
-    }
-
-    Ok(())
-}
 
 /// Review all cards that are due for review.
 #[component]
@@ -37,7 +15,8 @@ pub fn ReviewAllCards() -> impl IntoView {
     // Load cards
     Effect::new(move |_| {
         spawn_local(async move {
-            match get_cards().await {
+            #[cfg(feature = "hydrate")]
+            match fetch_cards_to_review().await {
                 Ok(loaded_cards) => {
                     set_cards.set(loaded_cards);
                     set_error.set(None);
@@ -64,6 +43,7 @@ pub fn ReviewCards(#[prop(into)] cards: Signal<Vec<model::Flashcard>>) -> impl I
     let handle_answer = Callback::new(move |answer: model::FlashcardAnswer| {
         let remembered = matches!(answer, model::FlashcardAnswer::Remember);
         spawn_local(async move {
+            #[cfg(feature = "hydrate")]
             if let Some(card) = cards.get().get(current_index.get()) {
                 match submit_answer(card.id, remembered).await {
                     Ok(_) => {

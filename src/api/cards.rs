@@ -7,7 +7,7 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
-    api::CreateCardRequest,
+    api::{CreateCardRequest, SubmitAnswerRequest},
     db::Database,
     model::Flashcard,
 };
@@ -21,6 +21,31 @@ pub async fn get_all_cards(Query(query): Query<ListCardsQuery>) -> impl IntoResp
     let db = Database::get_instance().unwrap().lock().unwrap();
     match db.all_cards(query.tag) {
         Ok(cards) => Json(cards).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}
+
+pub async fn get_cards_to_review() -> impl IntoResponse {
+    let db = Database::get_instance().unwrap().lock().unwrap();
+    match db.cards_to_review() {
+        Ok(cards) => Json(cards).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}
+
+pub async fn submit_answer(
+    Path(id): Path<i64>,
+    Json(req): Json<SubmitAnswerRequest>,
+) -> impl IntoResponse {
+    let mut db = Database::get_instance().unwrap().lock().unwrap();
+    let result = if req.remembered {
+        db.ok(id)
+    } else {
+        db.fail(id)
+    };
+
+    match result {
+        Ok(_) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }

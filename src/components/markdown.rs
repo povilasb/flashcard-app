@@ -13,7 +13,7 @@ pub fn Markdown(#[prop(into)] text: Signal<String>) -> impl IntoView {
     view! { <div inner_html=move || md_to_html(&text.get()) /> }
 }
 
-fn md_to_html(text: &str) -> String {
+pub(crate) fn md_to_html(text: &str) -> String {
     let options = Options::default();
     let mut plugins = Plugins::default();
     // Built-in themes:

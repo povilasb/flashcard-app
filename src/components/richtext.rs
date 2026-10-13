@@ -41,6 +41,19 @@ pub fn RichText(#[prop(into)] text: String) -> impl IntoView {
         .collect_view()
 }
 
+/// Render the same Markdown and MathML used by the Leptos component for HTTP clients.
+pub(crate) fn render_rich_text(text: &str) -> String {
+    parse_rich_text(text)
+        .into_iter()
+        .map(|block| match block {
+            TextBlock::Raw(text) => format!("<div>{}</div>", super::markdown::md_to_html(&text)),
+            TextBlock::AsciiMath(text) => {
+                format!("<span>{}</span>", mathemascii::render_mathml(mathemascii::parse(&text)))
+            }
+        })
+        .collect()
+}
+
 #[derive(Debug)]
 enum ParseState {
     RawStr(usize, usize),
