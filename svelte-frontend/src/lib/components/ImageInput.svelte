@@ -1,17 +1,18 @@
 <script lang="ts">
-  import { Image } from 'lucide-svelte'
+  import { Image, X } from 'lucide-svelte'
 
   let {
     label,
     file = $bindable<File | null>(null),
     disabled = false,
+    preview = $bindable(''),
   }: {
     label: string
     file?: File | null
     disabled?: boolean
+    preview?: string
   } = $props()
 
-  let preview = $state('')
   let error = $state<string | null>(null)
   let input: HTMLInputElement
 
@@ -24,7 +25,7 @@
     }
   })
 
-  function selectFile(selected: File | undefined) {
+  export function selectFile(selected: File | undefined) {
     if (!selected || disabled) return
     error = null
     if (
@@ -47,10 +48,30 @@
     event.preventDefault()
     selectFile(pasted)
   }
+
+  export function clear() {
+    file = null
+    error = null
+    if (input) input.value = ''
+  }
 </script>
 
-<div class="ml-4 flex flex-col gap-2">
+<div class="image-row">
+  {#if preview}
+    <div class="thumb">
+      <img src={preview} alt={`${label} preview`} />
+      <button
+        type="button"
+        class="thumb-x"
+        {disabled}
+        aria-label={`Remove ${label.toLowerCase()}`}
+        onclick={clear}><X size={14} aria-hidden="true" /></button
+      >
+    </div>
+  {/if}
+  <label for={label.replaceAll(' ', '-')} class="sr-only">{label}</label>
   <input
+    id={label.replaceAll(' ', '-')}
     bind:this={input}
     type="file"
     hidden
@@ -69,62 +90,83 @@
     ondragover={(event) => event.preventDefault()}
     ondrop={(event) => {
       event.preventDefault()
+      event.stopPropagation()
       selectFile(event.dataTransfer?.files[0])
     }}
   >
-    <span class="image-action"><Image size={20} /> Add image</span>
-    <span class="image-hint">or drop / paste into the text box</span>
+    <Image size={18} aria-hidden="true" />{file ? 'Replace image' : 'Add image'}
   </button>
-  {#if preview}
-    <img
-      src={preview}
-      alt={`${label} preview`}
-      class="max-h-48 max-w-full rounded object-contain"
-    />
-    <button
-      type="button"
-      {disabled}
-      class="self-start text-sm text-red-600 hover:underline"
-      onclick={() => {
-        file = null
-        error = null
-      }}>Remove {label.toLowerCase()}</button
-    >
-  {/if}
-  {#if error}<p role="alert" class="text-sm text-red-600">{error}</p>{/if}
+  <span class="image-hint">or drop / paste an image</span>
 </div>
+{#if error}<p role="alert" class="image-error">{error}</p>{/if}
 
 <style>
-  .image-picker {
+  .image-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  .thumb {
+    position: relative;
+    width: 112px;
+    height: 80px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--color-line);
+  }
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .thumb-x {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: rgb(21 23 28 / 0.72);
+    color: white;
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.5rem;
-    padding: 0.75rem 0;
-    border-radius: 0.25rem;
-    text-align: left;
+    justify-content: center;
     cursor: pointer;
-    color: #374151;
-
-    &:focus-visible {
-      outline: 2px solid #3b82f6;
-      outline-offset: 4px;
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
   }
-
-  .image-action {
+  button:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .image-error {
+    font-size: 13px;
+    color: var(--color-danger);
+  }
+  .image-picker {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
+    padding: 0 14px;
+    min-height: 44px;
+    border-radius: 10px;
+    font-size: 14px;
     font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    color: var(--color-ink-2);
+    transition: background 0.15s;
+    &:hover {
+      background: var(--color-chip);
+    }
   }
 
   .image-hint {
-    color: #6b7280;
+    color: var(--color-hint);
+    font-size: 13px;
   }
 </style>

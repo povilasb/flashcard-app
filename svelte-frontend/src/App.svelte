@@ -9,9 +9,10 @@
   const isAddPage = path === '/add-card'
 </script>
 
-<div class="flex min-h-screen">
+<div class="flex min-h-screen" class:flex-wrap={isAddPage}>
   <nav
     class="w-64 shrink-0 border-r border-gray-200 bg-gray-100 p-4"
+    class:max-sm:w-full={isAddPage}
     aria-label="Main navigation"
   >
     <div class="space-y-2">
@@ -36,7 +37,11 @@
     </div>
   </nav>
 
-  <main class="min-w-0 flex-1 p-4">
+  <main
+    class="min-w-0 flex-1"
+    class:p-4={!isAddPage}
+    class:max-sm:basis-full={isAddPage}
+  >
     {#if isAddPage}
       <AddCard />
     {:else if isReviewPage}
