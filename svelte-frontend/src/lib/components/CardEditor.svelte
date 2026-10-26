@@ -23,6 +23,7 @@
   import '@fontsource/newsreader/500.css'
   import '@fontsource/newsreader/400-italic.css'
   import ImageInput from './ImageInput.svelte'
+  import RichText from './RichText.svelte'
 
   let { card }: { card?: EditableCard } = $props()
   const initial = untrack(() => card)
@@ -490,9 +491,13 @@
                 src={answerPreview}
                 alt=""
               />{/if}
-            <span class="card-a" class:card-empty={!answer.trim()}
-              >{answer.trim() ? answer : 'The answer goes here'}</span
-            >
+            <div class="card-a" class:card-empty={!answer.trim()}>
+              {#if answer.trim()}
+                <RichText text={answer} />
+              {:else}
+                The answer goes here
+              {/if}
+            </div>
             {#if filledExamples.length}<span class="card-ex"
                 >{#each filledExamples as example}<span>{example}</span
                   >{/each}</span
@@ -967,10 +972,11 @@
     white-space: pre-wrap;
   }
   .card-a {
+    width: 100%;
+    min-width: 0;
     font-family: 'Newsreader', Georgia, serif;
     font-size: 21px;
     line-height: 1.45;
-    white-space: pre-wrap;
   }
   .card-empty {
     color: var(--color-placeholder);
