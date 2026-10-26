@@ -42,6 +42,7 @@
       )
       if (!response.ok)
         throw new Error(`Failed to load cards (HTTP ${response.status})`)
+
       const result = await response.json()
       cards = cardId ? [result] : result
     } catch (cause) {
@@ -85,7 +86,11 @@
   }
 </script>
 
-<section aria-label="Review cards" aria-busy={loading || submitting}>
+<section
+  class="min-w-0 text-ink wrap-anywhere [&_:is(button,a):focus-visible]:outline-2 [&_:is(button,a):focus-visible]:outline-offset-2 [&_:is(button,a):focus-visible]:outline-accent [&_.rich-text]:min-w-0 [&_.rich-text]:max-w-full [&_:is(img,svg,math)]:max-w-full [&_img]:h-auto [&_:is(pre,table)]:max-w-full [&_:is(pre,table)]:overflow-x-auto [&_table]:block"
+  aria-label="Review cards"
+  aria-busy={loading || submitting}
+>
   {#if loading}
     <p role="status">Loading cards...</p>
   {:else}
@@ -97,19 +102,19 @@
     ></progress>
     {#if card}
       {#key card.id}
-        <div class="mx-auto my-8 max-w-[600px] p-4">
+        <div class="mx-auto my-8 max-w-[600px] min-[760px]:p-4">
           <div
-            class="relative mb-4 rounded-lg border border-line bg-surface p-6 pb-12 text-left shadow"
+            class="mb-4 rounded-lg border border-line bg-surface p-4 text-left shadow sm:p-6"
           >
             <div class="flex flex-col items-start gap-4">
-              <div class="text-left text-[1.1rem] leading-6">
+              <div class="w-full min-w-0 text-left text-[1.1rem] leading-6">
                 <RichText text={card.question} />
               </div>
               {#if card.question_img}
                 <img
                   src={mediaUrl(card.question_img)}
                   alt="Question illustration"
-                  class="mt-4 h-auto max-w-full rounded-md border border-slate-200"
+                  class="mt-4 h-auto max-w-full rounded-md border border-line"
                 />
               {/if}
             </div>
@@ -122,7 +127,7 @@
                 <img
                   src={mediaUrl(card.img)}
                   alt="Answer illustration"
-                  class="mt-4 h-auto max-w-full rounded-md border border-slate-200"
+                  class="mt-4 h-auto max-w-full rounded-md border border-line"
                 />
               {/if}
             {/if}
@@ -132,32 +137,37 @@
                 <RichText text={card.examples ?? ''} />
               </div>
             {/if}
-            <div>
+            <div class="mt-4 flex flex-wrap gap-2">
               {#each card.tags as tag}
                 <span
-                  class="mt-4 inline-block rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-center text-sm text-slate-500"
+                  class="max-w-full rounded-2xl border border-line bg-chip px-3 py-1 text-center text-sm text-subtle"
                   >{tag}</span
                 >
               {/each}
             </div>
-            <div class="absolute right-20 bottom-4 text-xs text-slate-400">
-              Last reviewed: {reviewedAt(card.last_reviewed)}
-            </div>
-            <button
-              type="button"
-              aria-label="Show examples"
-              title="Show examples"
-              class="absolute right-12 bottom-4 text-slate-400 transition-colors hover:text-slate-600"
-              onclick={() => (showExamples = true)}
-              ><CirclePlus size={16} /></button
-            >
-            <a
-              href={`/cards/edit/${card.id}`}
-              aria-label="Edit card"
-              title="Edit card"
-              class="absolute right-4 bottom-4 text-slate-400 transition-colors hover:text-slate-600"
-              ><Pencil size={16} /></a
-            >
+            <footer class="mt-4 flex flex-wrap items-center justify-end gap-2">
+              <div
+                class="min-w-0 flex-1 basis-36 text-right text-xs text-subtle"
+              >
+                Last reviewed: {reviewedAt(card.last_reviewed)}
+              </div>
+              <button
+                type="button"
+                aria-label="Show examples"
+                title="Show examples"
+                aria-expanded={showExamples}
+                class="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-subtle transition-colors hover:bg-chip hover:text-ink"
+                onclick={() => (showExamples = true)}
+                ><CirclePlus size={18} aria-hidden="true" /></button
+              >
+              <a
+                href={`/cards/edit/${card.id}`}
+                aria-label="Edit card"
+                title="Edit card"
+                class="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-subtle transition-colors hover:bg-chip hover:text-ink"
+                ><Pencil size={18} aria-hidden="true" /></a
+              >
+            </footer>
           </div>
           <div class="mt-4 flex justify-center gap-4">
             {#if showAnswer && !cardId}

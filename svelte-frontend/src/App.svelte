@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Moon, Sun } from 'lucide-svelte'
+  import { Layers, Moon, Plus, Sun } from 'lucide-svelte'
   import ListCards from '$lib/components/ListCards.svelte'
   import ReviewCards from '$lib/components/ReviewCards.svelte'
   import CardEditor from '$lib/components/CardEditor.svelte'
@@ -22,6 +22,7 @@
   function toggleTheme() {
     dark = !dark
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+
     try {
       localStorage.setItem('theme', dark ? 'dark' : 'light')
     } catch {
@@ -42,18 +43,23 @@
   const isDesignedPage = isEditorPage || isListPage || isLanguagePage
 </script>
 
-<div
-  class="flex min-h-screen"
-  class:flex-wrap={isDesignedPage}
-  class:max-sm:content-start={isDesignedPage}
->
-  <nav
-    class="w-64 shrink-0 border-r border-line bg-chip p-4"
-    class:max-sm:w-full={isDesignedPage}
-    aria-label="Main navigation"
+<div class="flex min-h-screen max-[760px]:flex-col">
+  <aside
+    class="w-64 shrink-0 border-r border-line bg-chip p-4 max-[760px]:grid max-[760px]:w-full max-[760px]:grid-cols-[minmax(0,1fr)_44px_44px] max-[760px]:items-center max-[760px]:gap-x-3 max-[760px]:gap-y-2 max-[760px]:border-r-0 max-[760px]:border-b max-[760px]:bg-surface max-[760px]:px-3 max-[760px]:py-2.5 max-[760px]:font-['Figtree',system-ui,sans-serif] [&_a:focus-visible]:outline-2 [&_a:focus-visible]:outline-offset-2 [&_a:focus-visible]:outline-accent"
   >
+    <a
+      class="hidden min-h-11 items-center gap-2.5 rounded-[10px] text-base font-bold text-ink max-[760px]:flex"
+      href="/"
+      aria-label="Flashcards home"
+    >
+      <span
+        class="flex size-8 items-center justify-center rounded-[9px] bg-accent text-on-accent"
+        ><Layers size={18} aria-hidden="true" /></span
+      >
+      Flashcards
+    </a>
     <button
-      class="mb-4 inline-flex size-11 cursor-pointer items-center justify-center rounded text-ink-2 hover:bg-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      class="mb-4 inline-flex size-11 cursor-pointer items-center justify-center rounded text-ink-2 hover:bg-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-[760px]:col-start-3 max-[760px]:row-start-1 max-[760px]:m-0 max-[760px]:rounded-[10px]"
       aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
       title={dark ? 'Switch to light theme' : 'Switch to dark theme'}
       onclick={toggleTheme}
@@ -63,24 +69,36 @@
           aria-hidden="true"
         />{/if}
     </button>
-    <div class="space-y-2">
-      <a
-        href="/add-card"
-        aria-current={isAddPage ? 'page' : undefined}
-        class="block rounded px-4 py-2 text-ink-2 hover:bg-line aria-[current=page]:bg-line"
-        >Add new card</a
+    <a
+      href="/add-card"
+      aria-label="Add new card"
+      aria-current={isEditorPage ? 'page' : undefined}
+      class="mb-2 block rounded px-4 py-2 text-ink-2 hover:bg-line aria-[current=page]:bg-line max-[760px]:col-start-2 max-[760px]:row-start-1 max-[760px]:m-0 max-[760px]:flex max-[760px]:h-11 max-[760px]:items-center max-[760px]:justify-center max-[760px]:rounded-[10px] max-[760px]:bg-accent max-[760px]:p-0 max-[760px]:text-on-accent max-[760px]:hover:bg-accent-hover max-[760px]:aria-[current=page]:bg-accent max-[760px]:aria-[current=page]:outline-3 max-[760px]:aria-[current=page]:outline-accent-soft"
+    >
+      <span class="hidden max-[760px]:inline-flex"
+        ><Plus size={20} aria-hidden="true" /></span
       >
+      <span class="max-[760px]:hidden">Add new card</span>
+    </a>
+    <nav
+      class="space-y-2 max-[760px]:col-span-full max-[760px]:flex max-[760px]:min-w-0 max-[760px]:gap-1 max-[760px]:space-y-0 max-[760px]:overflow-x-auto max-[760px]:p-1 max-[760px]:[&_a]:flex max-[760px]:[&_a]:min-h-11 max-[760px]:[&_a]:flex-[1_0_auto] max-[760px]:[&_a]:items-center max-[760px]:[&_a]:justify-center max-[760px]:[&_a]:rounded-[10px] max-[760px]:[&_a]:px-3 max-[760px]:[&_a]:py-0 max-[760px]:[&_a]:text-sm max-[760px]:[&_a]:font-medium max-[760px]:[&_a[aria-current=page]]:bg-accent-soft max-[760px]:[&_a[aria-current=page]]:font-semibold max-[760px]:[&_a[aria-current=page]]:text-accent"
+      aria-label="Main navigation"
+    >
       <a
         href="/review-cards"
-        aria-current={isReviewPage ? 'page' : undefined}
+        aria-current={isReviewPage || viewId ? 'page' : undefined}
         class="block rounded px-4 py-2 text-ink-2 hover:bg-line aria-[current=page]:bg-line"
-        >Review cards</a
+        ><span class="max-[760px]:hidden">Review cards</span><span
+          class="hidden max-[760px]:inline-flex">Review</span
+        ></a
       >
       <a
         href="/list-cards"
         aria-current={isListPage ? 'page' : undefined}
         class="block rounded px-4 py-2 text-ink-2 hover:bg-line aria-[current=page]:bg-line"
-        >List cards</a
+        ><span class="max-[760px]:hidden">List cards</span><span
+          class="hidden max-[760px]:inline-flex">Cards</span
+        ></a
       >
       <a
         href="/learn-languages"
@@ -88,13 +106,15 @@
         class="block rounded px-4 py-2 text-ink-2 hover:bg-line aria-[current=page]:bg-line"
         >Learn languages</a
       >
-    </div>
-  </nav>
+    </nav>
+  </aside>
 
   <main
-    class="min-w-0 flex-1"
-    class:p-4={!isDesignedPage}
-    class:max-sm:basis-full={isDesignedPage}
+    class={[
+      'min-w-0 flex-1',
+      !isDesignedPage &&
+        'p-4 max-[760px]:px-4 max-[760px]:pt-6 max-[760px]:pb-12',
+    ]}
   >
     {#if isAddPage}
       <CardEditor />
