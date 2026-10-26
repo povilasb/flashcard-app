@@ -23,28 +23,38 @@
   let error = $state<string | null>(null)
   let showAnswer = $state(false)
   let showExamples = $state(false)
+  let reviewingRandom = $state(false)
+  let hasRandomCards = $state(true)
   let card = $derived(cards[index])
 
   onMount(() => {
     void loadCards()
   })
 
-  async function loadCards() {
+  async function loadCards(random = false) {
     loading = true
     error = null
+    reviewingRandom = random
+
     try {
       const response = await fetch(
         cardId
           ? `/api/cards/${cardId}`
           : tag
             ? `/api/cards?${new URLSearchParams({ tag })}`
-            : '/api/cards/review',
+            : random
+              ? '/api/cards/random'
+              : '/api/cards/review',
       )
       if (!response.ok)
         throw new Error(`Failed to load cards (HTTP ${response.status})`)
 
       const result = await response.json()
       cards = cardId ? [result] : result
+      index = 0
+      showAnswer = false
+      showExamples = false
+      hasRandomCards = !random || cards.length > 0
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Failed to load cards'
     } finally {
@@ -191,16 +201,22 @@
         </div>
       {/key}
     {:else if !error}
-      <p class="mx-auto my-8 max-w-[600px] p-4 text-center">
-        Nothing to review at the moment.
-      </p>
+      <div class="mx-auto my-8 max-w-[600px] p-4 text-center">
+        <p>Nothing to review at the moment.</p>
+        {#if !tag && !cardId && hasRandomCards}
+          <button
+            class="mt-4 min-h-11 cursor-pointer rounded-md bg-accent-soft px-6 py-3 text-base text-accent transition-colors hover:bg-chip"
+            onclick={() => loadCards(true)}>5 more</button
+          >
+        {/if}
+      </div>
     {/if}
   {/if}
   {#if error}
     <p role="alert" class="mt-4 text-danger">{error}</p>
     {#if !card}<button
         class="mt-2 rounded bg-chip px-4 py-2 hover:bg-line"
-        onclick={loadCards}>Retry</button
+        onclick={() => loadCards(reviewingRandom)}>Retry</button
       >{/if}
   {/if}
 </section>

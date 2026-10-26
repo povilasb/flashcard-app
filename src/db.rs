@@ -119,6 +119,20 @@ impl Database {
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
+    pub fn random_cards(&self) -> Result<Vec<Flashcard>, anyhow::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT f.*, group_concat(ft.tag) FROM flashcards f
+             LEFT JOIN flashcard_tags ft ON f.id = ft.flashcard_id
+             WHERE f.last_reviewed + f.review_after_secs >= unixepoch('now')
+             GROUP BY f.id
+             ORDER BY random()
+             LIMIT 5",
+        )?;
+        let rows = stmt.query_map([], flashcard_from_row)?;
+
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
     pub fn ok(&mut self, card_id: i64) -> Result<(), Box<dyn Error>> {
         let tx = self.conn.transaction()?;
         tx.execute(
@@ -254,6 +268,40 @@ fn flashcard_from_row(row: &rusqlite::Row) -> rusqlite::Result<Flashcard> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn random_cards_selects_five_distinct_future_reviews_without_changing_them() {
+        let mut db = Database::in_memory().unwrap();
+        let mut card = Flashcard::new("question".into(), "answer".into());
+        card.tags = vec!["one".into(), "two".into()];
+        for hours in [-1, 8, 2, 7, 3, 6, 4, 5] {
+            card.review_after_secs = hours * 3600;
+            db.add_card(&card).unwrap();
+        }
+        let before = db.all_cards(None).unwrap();
+
+        let cards = db.random_cards().unwrap();
+
+        assert_eq!(cards.len(), 5);
+        let ids: std::collections::HashSet<_> = cards.iter().map(|card| card.id).collect();
+        assert_eq!(ids.len(), 5);
+        assert!(!ids.contains(&1));
+        assert!(cards.iter().all(|card| card.tags.len() == 2));
+        assert_eq!(db.all_cards(None).unwrap(), before);
+        assert!(db.review_history().unwrap().is_empty());
+    }
+
+    #[test]
+    fn random_cards_handles_empty_and_small_collections() {
+        let mut db = Database::in_memory().unwrap();
+        assert!(db.random_cards().unwrap().is_empty());
+        let card = Flashcard::new("question".into(), "answer".into());
+        db.add_card(&card).unwrap();
+
+        let cards = db.random_cards().unwrap();
+
+        assert_eq!(cards, vec![db.get_card(1).unwrap()]);
+    }
 
     #[test]
     fn test_update_card_works_when_nothing_changed() {

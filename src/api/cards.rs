@@ -33,6 +33,15 @@ pub async fn get_cards_to_review() -> impl IntoResponse {
     }
 }
 
+pub async fn get_random_cards() -> impl IntoResponse {
+    let db = Database::get_instance().unwrap().lock().unwrap();
+
+    match db.random_cards() {
+        Ok(cards) => Json(cards).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}
+
 pub async fn submit_answer(
     Path(id): Path<i64>,
     Json(req): Json<SubmitAnswerRequest>,

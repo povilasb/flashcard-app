@@ -45,6 +45,7 @@ pub fn router(frontend: PathBuf) -> Router {
             post(cards::create_card).get(cards::get_all_cards),
         )
         .route("/api/cards/review", get(cards::get_cards_to_review))
+        .route("/api/cards/random", get(cards::get_random_cards))
         .route("/api/cards/{id}/review", post(cards::submit_answer))
         .route(
             "/api/cards/{id}",
