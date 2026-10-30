@@ -270,6 +270,44 @@ mod tests {
     use super::*;
 
     #[test]
+    fn get_missing_card_returns_no_rows() {
+        let db = Database::in_memory().unwrap();
+
+        let error = db.get_card(1).unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<rusqlite::Error>(),
+            Some(rusqlite::Error::QueryReturnedNoRows)
+        ));
+    }
+
+    #[test]
+    fn delete_removes_card_tags_and_history_then_returns_no_rows() {
+        let mut db = Database::in_memory().unwrap();
+        let mut card = Flashcard::new("question".into(), "answer".into());
+        card.tags = vec!["rust".into()];
+        db.add_card(&card).unwrap();
+        db.ok(1).unwrap();
+
+        db.delete_card(1).unwrap();
+
+        assert!(db.all_cards(None).unwrap().is_empty());
+        assert!(db.review_history().unwrap().is_empty());
+        let tag_count: i64 = db
+            .conn
+            .query_row("SELECT count(*) FROM flashcard_tags", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(tag_count, 0);
+
+        let error = db.delete_card(1).unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<rusqlite::Error>(),
+            Some(rusqlite::Error::QueryReturnedNoRows)
+        ));
+    }
+
+    #[test]
     fn random_cards_selects_five_distinct_future_reviews_without_changing_them() {
         let mut db = Database::in_memory().unwrap();
         let mut card = Flashcard::new("question".into(), "answer".into());

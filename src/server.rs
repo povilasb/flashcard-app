@@ -1,10 +1,14 @@
 //! Route APIs and media separately from the Svelte document fallback.
-use crate::api::{cards, languages, media, rich_text};
+use crate::{
+    api::{cards, database, languages, media, rich_text, ApiError},
+    model::Flashcard,
+};
 use axum::{
+    extract::{Path, Query},
     http::{header, StatusCode, Uri},
     response::{IntoResponse, Response},
     routing::{get, post},
-    Router,
+    Json, Router,
 };
 use std::path::PathBuf;
 use tower_http::services::ServeDir;
@@ -42,16 +46,34 @@ pub fn router(frontend: PathBuf) -> Router {
         .route("/api/rich-text/render", post(rich_text::render))
         .route(
             "/api/cards",
-            post(cards::create_card).get(cards::get_all_cards),
+            post(cards::create_card).get(|Query(query): Query<cards::ListCardsQuery>| async move {
+                Ok::<Json<Vec<Flashcard>>, ApiError>(Json(database()?.all_cards(query.tag)?))
+            }),
         )
-        .route("/api/cards/review", get(cards::get_cards_to_review))
-        .route("/api/cards/random", get(cards::get_random_cards))
+        .route(
+            "/api/cards/review",
+            get(|| async {
+                Ok::<Json<Vec<Flashcard>>, ApiError>(Json(database()?.cards_to_review()?))
+            }),
+        )
+        .route(
+            "/api/cards/random",
+            get(|| async {
+                Ok::<Json<Vec<Flashcard>>, ApiError>(Json(database()?.random_cards()?))
+            }),
+        )
         .route("/api/cards/{id}/review", post(cards::submit_answer))
         .route(
             "/api/cards/{id}",
-            get(cards::get_card)
-                .put(cards::update_card)
-                .delete(cards::delete_card),
+            get(|Path(id): Path<i64>| async move {
+                Ok::<Json<Flashcard>, ApiError>(Json(database()?.get_card(id)?))
+            })
+            .put(cards::update_card)
+            .delete(|Path(id): Path<i64>| async move {
+                database()?.delete_card(id)?;
+
+                Ok::<StatusCode, ApiError>(StatusCode::NO_CONTENT)
+            }),
         )
         .route("/api", get(|| async { StatusCode::NOT_FOUND }))
         .route("/api/{*path}", get(|| async { StatusCode::NOT_FOUND }))
