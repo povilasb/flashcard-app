@@ -13,7 +13,7 @@ use axum::{
 use std::path::PathBuf;
 use tower_http::services::ServeDir;
 
-pub fn router(frontend: PathBuf) -> Router {
+pub fn setup(frontend: PathBuf) -> Router {
     let index = frontend.join("index.html");
     let document = Router::new().fallback(move |uri: Uri| {
         let index = index.clone();
@@ -136,7 +136,7 @@ mod tests {
     async fn serves_deep_links_but_not_missing_apis_media_or_assets() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::write(dir.path().join("index.html"), "<html>Svelte</html>").unwrap();
-        let app = router(dir.path().to_path_buf());
+        let app = setup(dir.path().to_path_buf());
 
         for path in [
             "/",

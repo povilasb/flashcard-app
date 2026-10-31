@@ -6,5 +6,5 @@ pub mod languages;
 mod model;
 pub mod settings;
 
+pub mod http_routes;
 mod rich_text;
-pub mod server;

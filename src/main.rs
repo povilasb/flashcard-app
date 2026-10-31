@@ -1,5 +1,5 @@
 //! Run the Axum API and serve the built Svelte frontend.
-use flashcard_app::{server, settings::Settings};
+use flashcard_app::{http_routes, settings::Settings};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -18,6 +18,6 @@ async fn main() -> anyhow::Result<()> {
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:7001").await?;
     log::info!("Listening on http://127.0.0.1:7001");
-    axum::serve(listener, server::router(frontend)).await?;
+    axum::serve(listener, http_routes::setup(frontend)).await?;
     Ok(())
 }
